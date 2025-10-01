@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Pickup Soccer Lineup Helper</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --muted:#a0a7b4; --text:#f3f5f7; --accent:#6da7ff; --danger:#ff6b6b; --ok:#5fd38d;
+    --border:#242a36; --chip:#202633;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--text)}
+  .wrap{max-width:1100px; margin:0 auto; padding:16px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+  h1{font-size:20px; margin:0}
+  .hint{color:var(--muted); font-size:13px}
+  .tabbar{display:flex; gap:8px; margin:8px 0 12px; position:sticky; top:0; background:var(--bg); z-index:5; padding-top:6px}
+  .tab-btn{background:#11151c; color:var(--muted); border:1px solid var(--border); border-radius:12px; padding:10px 12px; cursor:pointer; min-height:40px}
+  .tab-btn.active{color:var(--text); border-color:#344055; background:#141924}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px}
+  .grid{display:grid; gap:10px}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:900px){ .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:720px){ .grid-3,.grid-2,.grid-4{grid-template-columns:1fr} }
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  input, select{background:#0f1320; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:12px; width:100%; min-height:44px}
+  label{font-size:12px; color:var(--muted)}
+  .btn{background:#162033; color:var(--text); border:1px solid #2a3347; border-radius:12px; padding:12px 14px; cursor:pointer; transition:all .15s; min-height:44px}
+  .btn:hover{border-color:#3c4962}
+  .btn.secondary{background:#121826}
+  .btn.danger{background:#2a1212; border-color:#4b1f1f; color:#ffb9b9}
+  .btn.ok{background:#11271d; border-color:#1e3b2c; color:#aaf0c9}
+  .btn.small{padding:8px 10px; min-height:36px; font-size:13px}
+  .pill{background:var(--chip); color:var(--muted); font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border)}
+  .split{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .player{display:flex; align-items:center; justify-content:space-between; gap:8px; background:#121620; border:1px solid var(--border); padding:10px; border-radius:12px}
+  .player.out{opacity:.6; background:#141218; border-color:#3b2a2a}
+  .muted{color:var(--muted)}
+  .footer{margin-top:10px; color:var(--muted); font-size:12px}
+  .teams{display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr))}
+  .teams.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:900px){ .teams.four{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .team-title{display:flex; align-items:center; justify-content:space-between}
+  .team-list{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:6px}
+  .team-item{display:flex; align-items:center; justify-content:space-between; gap:8px; background:#0f1320; border:1px solid var(--border); padding:10px; border-radius:10px; font-size:14px}
+  .sr{font-size:12px; color:var(--muted)}
+  .stack-vertical{display:flex; flex-direction:column; gap:6px}
+  .file{display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border:1px dashed #3b465c; border-radius:12px; cursor:pointer; min-height:44px}
+  .file input{display:none}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#0b0e14; border:1px solid var(--border); padding:2px 8px; border-radius:8px; font-size:12px; color:var(--muted)}
+  .sticky-actions{position:sticky; bottom:8px; display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
+  .legend{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .chip-A{background:#233043}
+  .chip-B{background:#34283d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pickup Soccer Lineup Helper</h1>
+      <div class="hint">No GKs · 2 teams until 20 active · 4 teams at 20+</div>
+    </div>
+    <div class="tabbar">
+      <button id="tabRoster" class="tab-btn active">Roster</button>
+      <button id="tabTeams" class="tab-btn">Teams</button>
+      <button id="tabAbout" class="tab-btn">About</button>
+    </div>
+  </header>
+
+  <!-- Roster Tab -->
+  <section id="panelRoster" class="card">
+    <div class="split" style="margin-bottom:10px">
+      <div class="hint" id="countsHint">Active 0 / Total 0</div>
+      <div class="row">
+        <button class="btn small" id="allInBtn">All active</button>
+        <button class="btn small" id="allOutBtn">All out</button>
+      </div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="stack-vertical">
+        <label for="name">Name</label>
+        <input id="name" placeholder="e.g., Sam">
+      </div>
+      <div class="stack-vertical">
+        <label for="skill">Skill (1–5)</label>
+        <select id="skill">
+          <option value="1">1 · Beginner</option>
+          <option value="2">2</option>
+          <option value="3" selected>3 · Intermediate</option>
+          <option value="4">4</option>
+          <option value="5">5 · Advanced</option>
+        </select>
+      </div>
+      <div class="stack-vertical">
+        <label for="position">Position</label>
+        <select id="position">
+          <option value="ANY" selected>ANY</option>
+          <option value="DEF">DEF</option>
+          <option value="MID">MID</option>
+          <option value="FWD">FWD</option>
+        </select>
+      </div>
+      <div class="stack-vertical">
+        <label for="stamina">Stamina (1–3)</label>
+        <select id="stamina">
+          <option value="1">1 · Low</option>
+          <option value="2" selected>2 · Medium</option>
+          <option value="3">3 · High</option>
+        </select>
+      </div>
+      <div class="stack-vertical" style="align-self:end">
+        <button class="btn ok" id="addBtn">Add player</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="shuffleBtn">Reshuffle</button>
+      <button class="btn" id="exportTeamsBtn">Export teams (CSV)</button>
+      <button class="btn" id="exportRosterBtn">Export roster (CSV)</button>
+      <label class="file">
+        <span>Import roster (CSV)</span>
+        <input type="file" id="importFile" accept=".csv">
+      </label>
+      <button class="btn" id="demoBtn">Load demo</button>
+      <button class="btn danger" id="clearBtn">Clear roster</button>
+    </div>
+
+    <div id="rosterList" class="grid grid-3" style="margin-top:12px"></div>
+  </section>
+
+  <!-- Teams Tab -->
+  <section id="panelTeams" class="card" style="display:none">
+    <div class="split">
+      <div class="legend">
+        <span class="hint" id="teamsHint">Built from active players</span>
+        <span class="pill chip-A">A-side</span>
+        <span class="pill chip-B">B-side</span>
+      </div>
+      <div class="row">
+        <button class="btn small" id="reshuffleTeamsBtn">Reshuffle</button>
+        <span class="pill" id="teamsCountPill">2 teams</span>
+      </div>
+    </div>
+    <div id="teamsWrap" class="teams" style="margin-top:12px"></div>
+    <div class="sticky-actions">
+      <button class="btn" id="reshuffleTeamsBtnBottom">Reshuffle</button>
+    </div>
+  </section>
+
+  <!-- About Tab -->
+  <section id="panelAbout" class="card" style="display:none">
+    <h3>How it balances</h3>
+    <ul>
+      <li>Builds teams from <b>active</b> players only.</li>
+      <li><b>2 teams</b> for &lt;20 active; remembers A/B sides. At <b>20+</b>, it splits A→A/C and B→B/D (so the 4-team set respects the previous 2-team split).</li>
+      <li>Players carry <i>skill</i> (1–5), <i>position</i> (DEF/MID/FWD/ANY), and <i>stamina</i> (1–3).</li>
+      <li>Composite score = <code>skill×10 + stamina</code>. Tiny seed‑based jitter creates variety when reshuffling.</li>
+      <li>Roster & A/B mapping are saved locally (no server needed). Import/export CSV; optional <code>active</code> column.</li>
+    </ul>
+    <p class="footer">CSV columns: <span class="kbd">name,skill,position,stamina[,active]</span></p>
+  </section>
+
+  <p class="footer">Tip: Use the Teams tab Reshuffle for quick variety without losing A/B grouping at 20+.</p>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "pickup_soccer_roster_v2";
+  const MAP_KEY = "pickup_soccer_abmap_v2";
+  let seed = 0;
+  const $ = (s)=>document.querySelector(s);
+  function djb2(str){ let h=5381; for(let i=0;i<str.length;i++){ h=((h<<5)+h)+str.charCodeAt(i); h|=0; } return Math.abs(h); }
+  function jitter(name, seed, scale=0.49){ const val = djb2(name+"#"+seed)%1000/1000; return (val*2-1)*scale; }
+  const elRoster = $("#rosterList");
+  const elTeamsWrap = $("#teamsWrap");
+  const elTeamsCountPill = $("#teamsCountPill");
+  const elCountsHint = $("#countsHint");
+  const elTeamsHint = $("#teamsHint");
+
+  // Default roster (active=true)
+  const defaultRoster = [
+    {name:"Eli",skill:3,position:"DEF",stamina:3,active:true},
+    {name:"General",skill:3,position:"DEF",stamina:2,active:true},
+    {name:"Vince",skill:3,position:"DEF",stamina:2,active:true},
+    {name:"Ahoora",skill:4,position:"FWD",stamina:1,active:true},
+    {name:"Kellen",skill:4,position:"ANY",stamina:2,active:true},
+    {name:"Brea",skill:2,position:"ANY",stamina:2,active:true},
+    {name:"Teddy",skill:2,position:"ANY",stamina:3,active:true},
+    {name:"Emeka",skill:2,position:"ANY",stamina:1,active:true},
+    {name:"Andrew",skill:4,position:"MID",stamina:3,active:true},
+    {name:"Sam",skill:5,position:"ANY",stamina:3,active:true},
+    {name:"Mo",skill:4,position:"MID",stamina:2,active:true},
+    {name:"Ogbe",skill:5,position:"ANY",stamina:2,active:true},
+    {name:"Otto",skill:5,position:"MID",stamina:2,active:true},
+    {name:"Chu-Chu",skill:2,position:"MID",stamina:2,active:true},
+    {name:"Javier",skill:2,position:"DEF",stamina:2,active:true},
+    {name:"Matthew",skill:3,position:"ANY",stamina:2,active:true},
+  ].map(p=>({...p, id:uid()}));
+
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function normalize(p){ return {id:p.id||uid(), name:p.name, skill:+p.skill, position:p.position, stamina:+p.stamina, active:(p.active!==false)}; }
+  function loadRoster(){ try{ const raw=localStorage.getItem(STORAGE_KEY); return raw? JSON.parse(raw).map(normalize): defaultRoster; } catch(e){ return defaultRoster; } }
+  function saveRoster(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+  function loadABMap(){ try{ const raw=localStorage.getItem(MAP_KEY); return raw? JSON.parse(raw): {}; } catch(e){ return {}; } }
+  function saveABMap(map){ localStorage.setItem(MAP_KEY, JSON.stringify(map)); }
+
+  let roster = loadRoster();
+  let abMap = loadABMap(); // id -> 'A' | 'B'
+
+  // Tabs
+  const tabs = [
+    {btn:"#tabRoster", panel:"#panelRoster"},
+    {btn:"#tabTeams", panel:"#panelTeams"},
+    {btn:"#tabAbout", panel:"#panelAbout"},
+  ];
+  tabs.forEach(t=>{
+    document.querySelector(t.btn).addEventListener("click", ()=>{
+      tabs.forEach(u=>{
+        document.querySelector(u.btn).classList.remove("active");
+        document.querySelector(u.panel).style.display="none";
+      });
+      document.querySelector(t.btn).classList.add("active");
+      document.querySelector(t.panel).style.display="block";
+      if(t.panel==="#panelTeams") renderTeams();
+    });
+  });
+
+  // Counts
+  function updateCounts(){
+    const active = roster.filter(p=>p.active!==false).length;
+    elCountsHint.textContent = `Active ${active} / Total ${roster.length}`;
+    elTeamsHint.textContent = `Built from ${active} active player${active===1?'':'s'}`;
+  }
+
+  // Add player
+  $("#addBtn").addEventListener("click", ()=>{
+    const name = $("#name").value.trim();
+    const skill = +$("#skill").value;
+    const position = $("#position").value;
+    const stamina = +$("#stamina").value;
+    if(!name) return;
+    roster.push({id:uid(), name, skill, position, stamina, active:true});
+    saveRoster(roster);
+    $("#name").value="";
+    renderRoster();
+    renderTeams();
+    updateCounts();
+  });
+
+  // Bulk active/out
+  $("#allInBtn").addEventListener("click", ()=>{
+    roster.forEach(p=>p.active=true); saveRoster(roster); renderRoster(); renderTeams(); updateCounts();
+  });
+  $("#allOutBtn").addEventListener("click", ()=>{
+    roster.forEach(p=>p.active=false); saveRoster(roster); renderRoster(); renderTeams(); updateCounts();
+  });
+
+  // Reshuffle
+  $("#shuffleBtn").addEventListener("click", ()=>{ seed++; renderTeams(true); });
+  $("#reshuffleTeamsBtn").addEventListener("click", ()=>{ seed++; renderTeams(true); });
+  $("#reshuffleTeamsBtnBottom").addEventListener("click", ()=>{ seed++; renderTeams(true); });
+
+  // Clear
+  $("#clearBtn").addEventListener("click", ()=>{
+    if(confirm("Clear entire roster?")){
+      roster = [];
+      abMap = {};
+      saveRoster(roster);
+      saveABMap(abMap);
+      renderRoster();
+      renderTeams();
+      updateCounts();
+    }
+  });
+
+  // Demo
+  $("#demoBtn").addEventListener("click", ()=>{
+    roster = defaultRoster.map(p=>({...p, id:uid()}));
+    abMap = {};
+    saveRoster(roster);
+    saveABMap(abMap);
+    renderRoster();
+    renderTeams();
+    updateCounts();
+  });
+
+  // Export roster CSV (with active column)
+  $("#exportRosterBtn").addEventListener("click", ()=>{
+    const rows = [["name","skill","position","stamina","active"]];
+    roster.forEach(p=> rows.push([p.name,p.skill,p.position,p.stamina,p.active?1:0]));
+    download("roster.csv", rowsToCSV(rows));
+  });
+
+  // Import roster CSV (supports optional active column)
+  $("#importFile").addEventListener("change", (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const text = String(reader.result||"").trim();
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const out = [];
+        for(const line of lines){
+          const cols = line.split(",").map(c=>c.trim());
+          if(cols[0].toLowerCase()==="name") continue;
+          const [nm, sk, pos, sta, act] = cols;
+          if(!nm) continue;
+          const posNorm = (pos||"ANY").toUpperCase();
+          const position = ["DEF","MID","FWD","ANY"].includes(posNorm) ? posNorm : "ANY";
+          const skill = Math.max(1, Math.min(5, Number(sk)||3));
+          const stamina = Math.max(1, Math.min(3, Number(sta)||2));
+          const active = parseActive(act);
+          out.push({id:uid(), name:nm, skill, position, stamina, active});
+        }
+        roster = out;
+        abMap = {}; // reset mapping on import to avoid stale ties
+        saveRoster(roster);
+        saveABMap(abMap);
+        renderRoster();
+        renderTeams();
+        updateCounts();
+      }catch(err){
+        alert("Import failed. Ensure CSV has columns: name,skill,position,stamina[,active]");
+      }
+    };
+    reader.readAsText(f);
+    e.target.value = "";
+  });
+
+  // Export teams CSV (active players only)
+  $("#exportTeamsBtn").addEventListener("click", ()=>{
+    const activePlayers = roster.filter(p=>p.active!==false);
+    const teams = buildTeams(activePlayers);
+    const rows = [["Team","Player","Skill","Position","Stamina"]];
+    teams.forEach(t=> t.players.forEach(p=> rows.push([t.name,p.name,p.skill,p.position,p.stamina])));
+    download(`pickup_teams_${teams.length}t_${activePlayers.length}p.csv`, rowsToCSV(rows));
+  });
+
+  function rowsToCSV(rows){
+    return rows.map(r=> r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  }
+  function download(filename, text){
+    const blob = new Blob([text], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function parseActive(v){
+    if(v==null || v==="") return true;
+    const s = String(v).toLowerCase();
+    return ["1","true","yes","y","in","active"].includes(s);
+  }
+
+  // Roster rendering
+  function renderRoster(){
+    elRoster.innerHTML = "";
+    if(roster.length===0){
+      elRoster.innerHTML = '<div class="muted">No players yet. Add or import a CSV.</div>';
+      return;
+    }
+    roster.forEach(p=>{
+      const div = document.createElement("div");
+      div.className = "player" + (p.active===false ? " out": "");
+      div.innerHTML = `
+        <div>
+          <div><b>${escapeHtml(p.name)}</b> ${p.active===false?'<span class="pill">OUT</span>':''}</div>
+          <div class="sr">${p.position} · Skill ${p.skill} · Stamina ${p.stamina}</div>
+        </div>
+        <div class="row">
+          <button class="btn small" data-act="toggle">${p.active!==false?'Set OUT':'Set IN'}</button>
+          <button class="btn small" data-act="skp">Skill +</button>
+          <button class="btn small" data-act="skm">Skill −</button>
+          <button class="btn small" data-act="stp">Sta +</button>
+          <button class="btn small" data-act="stm">Sta −</button>
+          <button class="btn small danger" data-act="del">Delete</button>
+        </div>
+      `;
+      div.querySelectorAll("button").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const act = btn.getAttribute("data-act");
+          if(act==="del"){
+            if(abMap[p.id]) delete abMap[p.id];
+            roster = roster.filter(x=>x!==p);
+          }else if(act==="skp"){ p.skill = Math.min(5, p.skill+1); }
+          else if(act==="skm"){ p.skill = Math.max(1, p.skill-1); }
+          else if(act==="stp"){ p.stamina = Math.min(3, p.stamina+1); }
+          else if(act==="stm"){ p.stamina = Math.max(1, p.stamina-1); }
+          else if(act==="toggle"){ p.active = !(p.active!==false?true:false); }
+          saveRoster(roster);
+          saveABMap(abMap);
+          renderRoster();
+          renderTeams();
+          updateCounts();
+        });
+      });
+      elRoster.appendChild(div);
+    });
+  }
+
+  // ==== Team building core ====
+  function composite(p){ return p.skill*10 + p.stamina; }
+  function sortWithJitter(players){
+    return [...players].sort((a,b)=>{
+      const sa = composite(a) + jitter(a.name, seed, 0.49);
+      const sb = composite(b) + jitter(b.name, seed, 0.49);
+      if(sb!==sa) return sb-sa;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  function computeBalancedTeams(players, teamNames){
+    const numTeams = teamNames.length;
+    const teams = teamNames.map((n,i)=>({ id:i, name:n, players:[], totalScore:0, pos:{DEF:0,MID:0,FWD:0,ANY:0} }));
+    const totalsByPos = players.reduce((a,p)=>{ a[p.position]=(a[p.position]||0)+1; return a; },{});
+    const targets = { DEF:Math.round((totalsByPos.DEF||0)/numTeams), MID:Math.round((totalsByPos.MID||0)/numTeams), FWD:Math.round((totalsByPos.FWD||0)/numTeams), ANY:Math.round((totalsByPos.ANY||0)/numTeams) };
+    const ordered = sortWithJitter(players);
+    for(const p of ordered){
+      const pScore = composite(p);
+      let bestIdx=0, bestVal=Infinity;
+      teams.forEach((t,idx)=>{
+        const sizePenalty = t.players.length;
+        const posKey = p.position;
+        const posShortage = Math.max(0, (targets[posKey]||0) - (t.pos[posKey]||0));
+        const posBonus = -posShortage*3;
+        const wiggle = jitter(p.name+":"+t.name, seed, 0.49);
+        const value = (t.totalScore + pScore) + sizePenalty*2 + posBonus + wiggle;
+        if(value < bestVal){ bestVal=value; bestIdx=idx; }
+      });
+      const team = teams[bestIdx];
+      team.players.push(p);
+      team.totalScore += pScore;
+      team.pos[p.position] = (team.pos[p.position]||0)+1;
+    }
+    teams.forEach(t=>{
+      t.avgSkill = t.players.length ? (t.players.reduce((s,p)=>s+p.skill,0)/t.players.length) : 0;
+      t.avgStamina = t.players.length ? (t.players.reduce((s,p)=>s+p.stamina,0)/t.players.length) : 0;
+    });
+    return teams;
+  }
+
+  function rememberAB(teams2){
+    const map = {};
+    if(teams2.length===2){
+      teams2[0].players.forEach(p=> map[p.id] = "A");
+      teams2[1].players.forEach(p=> map[p.id] = "B");
+    }
+    abMap = map;
+    saveABMap(abMap);
+  }
+
+  function buildTeams(activePlayers){
+    if(activePlayers.length===0) return [];
+    if(activePlayers.length < 20){
+      const two = computeBalancedTeams(activePlayers, ["Team A","Team B"]);
+      rememberAB(two);
+      return two;
+    }else{
+      // Ensure we have an AB map; if not, build it
+      let needMap = !abMap || Object.keys(abMap).length === 0;
+      if(needMap){
+        const tmp = computeBalancedTeams(activePlayers, ["Team A","Team B"]);
+        rememberAB(tmp);
+      }
+      // Partition to sides
+      const sideA = [];
+      const sideB = [];
+      let sumA=0, sumB=0;
+      activePlayers.forEach(p=>{
+        const side = abMap[p.id];
+        if(side==="A"){ sideA.push(p); sumA+=composite(p); }
+        else if(side==="B"){ sideB.push(p); sumB+=composite(p); }
+        else{
+          // New player: put on lighter side (by total composite)
+          if(sumA<=sumB){ sideA.push(p); sumA+=composite(p); abMap[p.id]="A"; }
+          else { sideB.push(p); sumB+=composite(p); abMap[p.id]="B"; }
+        }
+      });
+      saveABMap(abMap);
+      // Now split each side into two balanced teams
+      const [A, C] = computeBalancedTeams(sideA, ["Team A","Team C"]);
+      const [B, D] = computeBalancedTeams(sideB, ["Team B","Team D"]);
+      return [A,B,C,D];
+    }
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;", ">":"&gt;", "\"":"&quot;","'":"&#039;" }[m])); }
+
+  function renderTeams(){
+    const activePlayers = roster.filter(p=>p.active!==false);
+    const teams = buildTeams(activePlayers);
+    elTeamsCountPill.textContent = `${teams.length} team${teams.length>1?'s':''}`;
+    elTeamsWrap.className = "teams" + (teams.length===4 ? " four": "");
+    elTeamsWrap.innerHTML = "";
+    teams.forEach(t=>{
+      const card = document.createElement("div");
+      card.className = "card";
+      const avgS = (t.avgSkill||0).toFixed(2);
+      const avgT = (t.avgStamina||0).toFixed(2);
+      const sideChip = (t.name==="Team A"||t.name==="Team C")? 'chip-A' : 'chip-B';
+      card.innerHTML = `
+        <div class="team-title">
+          <h3 style="margin:0">${t.name}</h3>
+          <span class="pill ${sideChip}">Players ${t.players.length}</span>
+        </div>
+        <div class="muted" style="font-size:12px; margin-top:6px">Avg skill ${avgS} · Avg stamina ${avgT}</div>
+        <ul class="team-list" style="margin-top:8px"></ul>
+      `;
+      const ul = card.querySelector(".team-list");
+      (t.players||[]).forEach(p=>{
+        const li = document.createElement("li");
+        li.className = "team-item";
+        li.innerHTML = `<span>${escapeHtml(p.name)}</span><span class="sr">${p.position} · S${p.skill}/St${p.stamina}</span>`;
+        ul.appendChild(li);
+      });
+      elTeamsWrap.appendChild(card);
+    });
+  }
+
+  // Initial render
+  renderRoster();
+  renderTeams();
+  updateCounts();
+})();
+</script>
+</body>
+</html>
