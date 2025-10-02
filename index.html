@@ -432,9 +432,12 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     });
     els.sendMagic.addEventListener("click", async ()=>{
       const email = els.email.value.trim(); if(!email) return alert("Enter your email first.");
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
-      els.authStatus.textContent = error ? "Failed to send link" : "Check your email for the sign‑in link";
-    });
+     const { error } = await supabase.auth.signInWithOtp({
+  email,
+  options: {
+    emailRedirectTo: "https://abstractartifact.github.io/REPO/"
+  }
+});
     els.signOut.addEventListener("click", async ()=>{ await supabase.auth.signOut(); });
   }else{
     els.sendMagic.disabled = true; els.email.disabled = true; els.authStatus.textContent = "DB not configured";
