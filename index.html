@@ -185,6 +185,30 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
     : null;
 
+  if (supabase) {
+  (async () => {
+    // Handle magic-link redirects (Safari-friendly)
+    const url = new URL(window.location.href);
+    const hasCode =
+      url.hash.includes("code=") || url.searchParams.has("code");
+
+    if (hasCode) {
+      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+      if (error) console.error("exchange error", error);
+
+      // Clean URL (remove code params)
+      const clean = url.origin + url.pathname;
+      history.replaceState({}, document.title, clean);
+    }
+
+    // Bootstrap session so the UI shows "DB: online"
+    const { data: { session } } = await supabase.auth.getSession();
+    currentUser = session?.user || null;
+    setAuthUI();
+    if (currentUser) { await dbPull(); }
+  })();
+}
+
   const $ = s => document.querySelector(s);
   const els = {
     rosterList: $("#rosterList"),
