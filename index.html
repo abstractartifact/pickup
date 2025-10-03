@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Pickup Lineup — FIFA '98 + Supabase</title>
+<title>Pickup Lineup — FIFA ’98 (DB + Link)</title>
 <style>
 :root{
   --bg:#0b0f1a; --panel:#111a2c; --panel-2:#0e1626; --text:#f5f7ff; --muted:#9fb0d0;
@@ -22,26 +22,45 @@ body{
     var(--bg);
 }
 .wrap{max-width:1120px; margin:0 auto; padding:16px}
-.card{ background:linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border:1px solid var(--border); border-radius:16px; padding:14px;
-  box-shadow:0 10px 28px rgba(0,0,0,.35), 0 0 0 1px rgba(32,184,255,.12); }
+.card{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border:1px solid var(--border); border-radius:16px; padding:14px;
+  box-shadow:0 10px 28px rgba(0,0,0,.35), 0 0 0 1px rgba(32,184,255,.12);
+}
 .header{ position:relative; margin-bottom:14px; padding:16px 14px; border-radius:16px;
   background:linear-gradient(120deg, rgba(0,163,255,.45), rgba(255,209,0,.30) 60%, rgba(255,107,0,.22)), linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-  border:1px solid var(--border); overflow:hidden; }
-.header::before{ content:""; position:absolute; inset:-20% -10% auto auto; transform:skewY(-12deg); width:60%; height:180%;
+  border:1px solid var(--border); overflow:hidden;
+}
+.header::before{
+  content:""; position:absolute; inset:-20% -10% auto auto; transform:skewY(-12deg); width:60%; height:180%;
   background:linear-gradient(180deg, rgba(255,209,0,0), rgba(255,209,0,.18) 45%, rgba(255,209,0,0)),
              repeating-linear-gradient(-35deg, rgba(255,209,0,.55) 0 10px, rgba(0,163,255,.55) 10px 20px, rgba(255,107,0,.55) 20px 30px);
-  mix-blend-mode:overlay; pointer-events:none; }
-h1{ margin:0; font-size:22px; letter-spacing:.8px; text-transform:uppercase; text-shadow:0 2px 0 rgba(0,0,0,.4), 0 0 18px rgba(255,209,0,.35), 0 0 36px rgba(0,163,255,.25) }
+  mix-blend-mode:overlay; pointer-events:none;
+}
+h1{ margin:0; font-size:22px; letter-spacing:.8px; text-transform:uppercase;
+    text-shadow:0 2px 0 rgba(0,0,0,.4), 0 0 18px rgba(255,209,0,.35), 0 0 36px rgba(0,163,255,.25) }
 .tagline{ color:var(--muted); font-size:13px }
 .tabbar{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap }
-.tab{ background:linear-gradient(180deg, #0e1526, #0b1220); color:#cbd8f4; border:1px solid var(--border); border-radius:12px; padding:10px 12px; cursor:pointer; min-height:40px; }
+.tab{
+  background:linear-gradient(180deg, #0e1526, #0b1220);
+  color:#cbd8f4; border:1px solid var(--border); border-radius:12px;
+  padding:10px 12px; cursor:pointer; min-height:40px;
+}
 .tab.active{ color:#fff; border-color:#2b3d62; background:linear-gradient(180deg, #10203e, #0d1a33) }
-.grid{ display:grid; gap:10px } .grid-3{ grid-template-columns:repeat(3,minmax(0,1fr)) } @media (max-width:760px){ .grid-3{ grid-template-columns:1fr } }
+.grid{ display:grid; gap:10px }
+.grid-3{ grid-template-columns:repeat(3,minmax(0,1fr)) }
+@media (max-width:760px){ .grid-3{ grid-template-columns:1fr } }
 .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
 label{ font-size:12px; color:var(--muted) }
-input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background:#0b1220; border:1px solid var(--border); border-radius:12px; }
-.btn{ min-height:40px; padding:10px 12px; color:#fff; background:linear-gradient(180deg, #122240, #0f1b33); border:1px solid #2b3d62;
-  border-radius:12px; cursor:pointer; transition:transform .06s, box-shadow .06s; }
+input, select{
+  width:100%; min-height:44px; padding:12px; color:#fff; background:#0b1220;
+  border:1px solid var(--border); border-radius:12px;
+}
+.btn{
+  min-height:40px; padding:10px 12px; color:#fff;
+  background:linear-gradient(180deg, #122240, #0f1b33); border:1px solid #2b3d62;
+  border-radius:12px; cursor:pointer; transition:transform .06s, box-shadow .06s;
+}
 .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,163,255,.5), 0 0 0 1px rgba(0,163,255,.35) }
 .btn.gold{ background:linear-gradient(180deg, #ffd100, #caa800); border-color:#ffdf3a; color:#0c0c0c; font-weight:700; box-shadow:0 0 0 1px rgba(255,209,0,.35) }
 .btn.blue{ background:linear-gradient(180deg, #1366a8, #0f4e7a); box-shadow:0 0 0 1px rgba(25,182,255,.35) }
@@ -54,7 +73,8 @@ input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background
 .player{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:#0b1326; border:1px solid var(--border); padding:10px; border-radius:12px }
 .player.out{ opacity:.6; background:#140f16; border-color:#3b2a2a }
 .muted{ color:var(--muted) }
-.teams{ display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr)) } .teams.four{ grid-template-columns:repeat(4,minmax(0,1fr)) }
+.teams{ display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr)) }
+.teams.four{ grid-template-columns:repeat(4,minmax(0,1fr)) }
 @media (max-width:900px){ .teams.four{ grid-template-columns:repeat(2,minmax(0,1fr)) } }
 .team-title{ display:flex; align-items:center; justify-content:space-between }
 .kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#0b0e14; border:1px solid var(--border); padding:2px 8px; border-radius:8px; font-size:12px; color:var(--muted) }
@@ -79,7 +99,10 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       </div>
       <div class="auth">
         <input id="email" placeholder="you@example.com" />
-        <button class="btn small blue" id="sendMagic">Email me a sign‑in link</button>
+        <button type="button" class="btn small blue" id="sendMagic"
+                onclick="window.__sendMagic && window.__sendMagic()">
+          Email me a sign‑in link
+        </button>
         <span class="muted" id="authStatus">Not signed in</span>
         <button class="btn small red" id="signOut" style="display:none">Sign out</button>
       </div>
@@ -173,42 +196,26 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       <li>Composite score = <code>quality×10 + stamina</code>; a tiny seed‑based jitter provides variety on reshuffle.</li>
       <li>DB sync via Supabase (optional). RLS ensures only you can read/write your roster when signed in.</li>
     </ul>
-    <p class="muted">CSV: <span class="kbd">name,quality,position,stamina[,active]</span> (imports with a <span class="kbd">skill</span> column also work).</p>
+    <p class="muted">CSV: <span class="kbd">name,quality,position,stamina[,active,side]</span> (imports with a <span class="kbd">skill</span> column also work).</p>
   </section>
 </div>
 
 <script>
 (() => {
-  const SUPABASE_URL = "https://jkdvcxdagwpvlhcrbytl.supabase.co";   // ← replace
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";              // ← replace
+  // ====== CONFIG ======
+  // 1) Your Supabase project (Settings → API)
+  const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";   // ← replace
+  const SUPABASE_ANON = "YOUR_ANON_PUBLIC_KEY";              // ← replace
+
+  // 2) Where magic links should return (your GitHub Pages URL, include trailing slash)
+  const REDIRECT_URL = "https://USERNAME.github.io/REPO/";   // ← replace
+
+  // Create client (if configured)
   const supabase = (window.supabase && SUPABASE_URL.startsWith("http"))
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
     : null;
 
-  if (supabase) {
-  (async () => {
-    // Handle magic-link redirects (Safari-friendly)
-    const url = new URL(window.location.href);
-    const hasCode =
-      url.hash.includes("code=") || url.searchParams.has("code");
-
-    if (hasCode) {
-      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-      if (error) console.error("exchange error", error);
-
-      // Clean URL (remove code params)
-      const clean = url.origin + url.pathname;
-      history.replaceState({}, document.title, clean);
-    }
-
-    // Bootstrap session so the UI shows "DB: online"
-    const { data: { session } } = await supabase.auth.getSession();
-    currentUser = session?.user || null;
-    setAuthUI();
-    if (currentUser) { await dbPull(); }
-  })();
-}
-
+  // ====== DOM + STATE ======
   const $ = s => document.querySelector(s);
   const els = {
     rosterList: $("#rosterList"),
@@ -225,17 +232,56 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   const KEYS = { roster:"pl_roster_db_v1", abmap:"pl_abmap_db_v1" };
   let seed = 0, sortMode = "quality_desc", currentUser = null, syncing = false;
 
+  // Make magic-link sender available both inline and via addEventListener
+  window.__sendMagic = async function () {
+    try {
+      if (!supabase) {
+        alert("Database client not initialized. Check SUPABASE_URL / key.");
+        return;
+      }
+      const email = els.email.value.trim();
+      if (!email) { alert("Enter your email first."); return; }
+
+      els.sendMagic.disabled = true;
+      els.sendMagic.textContent = "Sending…";
+      els.authStatus.textContent = "Sending magic link…";
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: REDIRECT_URL }
+      });
+
+      if (error) {
+        console.error("signInWithOtp error:", error);
+        els.authStatus.textContent = "Failed to send link";
+      } else {
+        els.authStatus.textContent = "Check your email for the sign‑in link";
+      }
+    } catch (e) {
+      console.error(e);
+      els.authStatus.textContent = "Error sending link";
+    } finally {
+      els.sendMagic.disabled = false;
+      els.sendMagic.textContent = "Email me a sign‑in link";
+    }
+  };
+  // Bind via JS too (covers CSP or inline-disabled cases)
+  if (els.sendMagic) els.sendMagic.addEventListener("click", window.__sendMagic);
+
+  // ====== Utils ======
   const djb2 = s => { let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return Math.abs(h); };
   const jitter = (name, k, scale=.49) => { const v = djb2(name+"#"+k)%1000/1000; return (v*2-1)*scale; };
-  const escapeHtml = s => s.replace(/[&<>\"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  const escapeHtml = s => s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m]));
   const uid = () => Math.random().toString(36).slice(2,9);
   const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
   const load = (k,fb) => { try{ const v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch{ return fb; } };
 
+  // ====== Data ======
   const normalize = p => ({ id:p.id||uid(), name:p.name, skill:+p.skill||+p.quality||3, position:p.position, stamina:+p.stamina, active:(p.active!==false), side:p.side||null });
   let roster = load(KEYS.roster, []).map(normalize);
   let abMap  = load(KEYS.abmap, {});
 
+  // ====== Shareable Link ======
   const enc = s => { const b=new TextEncoder().encode(s); let bin=""; b.forEach(ch=>bin+=String.fromCharCode(ch)); return btoa(bin); };
   const dec = b64 => { const bin=atob(b64); const arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new TextDecoder().decode(arr); };
   const toCompact = () => roster.map(p => [p.name, p.skill, p.position, p.stamina, p.active?1:0, abMap[p.id]||p.side||""]);
@@ -251,14 +297,18 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       const r=fromCompact(obj.r); roster=r.roster.map(normalize); abMap=r.abMap; save(KEYS.roster,roster); save(KEYS.abmap,abMap); els.shareStatus.textContent=`Loaded roster from link (${roster.length} players)`; return true;
     }catch{ els.shareStatus.textContent="Invalid roster link"; return false; } };
 
+  // ====== Tabs ======
   const tabs=[{btn:"#tabRoster",panel:"#panelRoster"},{btn:"#tabTeams",panel:"#panelTeams"},{btn:"#tabAbout",panel:"#panelAbout"}];
   tabs.forEach(t=>{ const b=$(t.btn); b.addEventListener("click",()=>{ tabs.forEach(u=>{ $(u.btn).classList.remove("active"); $(u.panel).style.display="none"; });
       b.classList.add("active"); $(t.panel).style.display="block"; if(t.panel==="#panelTeams") renderTeams(); }); });
 
+  // ====== CSV helpers ======
   const parseActive = v => { if(v==null||v==="") return true; const s=String(v).toLowerCase(); return ["1","true","yes","y","in","active"].includes(s); };
-  const rowsToCSV = rows => rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const rowsToCSV = rows => rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("
+");
   const download = (filename, text) => { const blob=new Blob([text],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); };
 
+  // ====== Roster view ======
   function updateCounts(){ const active=roster.filter(p=>p.active!==false).length; els.countsHint.textContent=`Active ${active} / Total ${roster.length}`; }
   function getSortedRoster(){
     const arr=[...roster];
@@ -306,6 +356,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     });
   }
 
+  // ====== Team building ======
   const score = p => p.skill*10 + p.stamina;
   const sortWithJitter = list => [...list].sort((a,b)=>{ const sa=score(a)+jitter(a.name,seed,.49), sb=score(b)+jitter(b.name,seed,.49); return sb!==sa? sb-sa : a.name.localeCompare(b.name); });
   function computeBalancedTeams(players, names){
@@ -339,7 +390,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   function renderTeams(){
     const active=roster.filter(p=>p.active!==false);
     const teams=buildTeams(active);
-    $("#teamsCountPill").textContent=`${teams.length} team${teams.length>1?"s":""}`;
+    els.teamsCount.textContent=`${teams.length} team${teams.length>1?"s":""}`;
     els.teamsWrap.className="teams"+(teams.length===4?" four":"");
     els.teamsWrap.innerHTML="";
     teams.forEach(t=>{
@@ -361,10 +412,32 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     });
   }
 
-  const reseed = ()=>{ seed = (seed * 1664525 + 1013904223) >>> 0; };
-  const btnReshuffle = document.getElementById("reshuffleTeamsBtn");
-  if(btnReshuffle){ btnReshuffle.addEventListener("click", ()=>{ reseed(); renderTeams(); }); }
+  // ====== DB helpers ======
+  const dbOnline = () => !!(supabase && currentUser);
+  const setDbPill = () => { els.dbPill.textContent = dbOnline()? "DB: online" : "DB: offline"; };
+  async function dbUpsert(p){
+    if(!dbOnline() || syncing) return;
+    const row = { id:p.id, user_id: currentUser.id, name:p.name, quality:p.skill, position:p.position, stamina:p.stamina, active:p.active, side:p.side||null };
+    await supabase.from("players").upsert(row).select("id").single().catch(()=>{});
+  }
+  async function dbDelete(p){
+    if(!dbOnline() || syncing) return;
+    await supabase.from("players").delete().match({ id:p.id, user_id: currentUser.id }).catch(()=>{});
+  }
+  async function dbPull(){
+    if(!supabase || !currentUser) return false;
+    syncing = true;
+    const { data, error } = await supabase.from("players").select("*").eq("user_id", currentUser.id).order("name", { ascending: true });
+    syncing = false;
+    if(error) return false;
+    roster = (data||[]).map(r => normalize({ id:r.id, name:r.name, skill:r.quality, position:r.position, stamina:r.stamina, active:r.active, side:r.side }));
+    abMap = {}; roster.forEach(p=>{ if(p.side==="A"||p.side==="B") abMap[p.id]=p.side; });
+    save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+    renderRoster(); renderTeams(); updateCounts(); makeLink(); setDbPill();
+    return true;
+  }
 
+  // ====== Wire up ======
   $("#addBtn").addEventListener("click",async()=>{
     const name=$("#name").value.trim(); const skill=+$("#skill").value; const position=$("#position").value; const stamina=+($("#stamina").value);
     if(!name) return; const p={id:uid(), name, skill, position, stamina, active:true, side:null};
@@ -374,6 +447,10 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   });
   $("#allInBtn").addEventListener("click",async()=>{ roster.forEach(p=>p.active=true); save(KEYS.roster,roster); if(currentUser) await Promise.all(roster.map(dbUpsert)); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
   $("#allOutBtn").addEventListener("click",async()=>{ roster.forEach(p=>p.active=false); save(KEYS.roster,roster); if(currentUser) await Promise.all(roster.map(dbUpsert)); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
+
+  const reseed = ()=>{ seed = (seed * 1664525 + 1013904223) >>> 0; };
+  const btnReshuffle = document.getElementById("reshuffleTeamsBtn");
+  if(btnReshuffle){ btnReshuffle.addEventListener("click", ()=>{ reseed(); renderTeams(); }); }
 
   $("#exportRosterBtn").addEventListener("click", ()=>{
     const rows=[["name","quality","position","stamina","active","side"]];
@@ -391,7 +468,9 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     const reader=new FileReader();
     reader.onload=async()=>{
       try{
-        const lines=String(reader.result||"").trim().split(/\r?\n/).filter(Boolean);
+        const lines=String(reader.result||"").trim().split(/
+?
+/).filter(Boolean);
         const out=[];
         for(const line of lines){
           const cols=line.split(",").map(c=>c.trim());
@@ -418,35 +497,11 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   $("#makeLinkBtn").addEventListener("click", makeLink);
   $("#copyLinkBtn").addEventListener("click", async ()=>{ const url=makeLink(); try{ await navigator.clipboard.writeText(url); els.shareStatus.textContent="Copied link to clipboard"; } catch{ els.shareStatus.textContent=url; } });
 
-  // ---- DB helpers ----
-  const dbOnline = () => !!(supabase && currentUser);
-  const setDbPill = () => { els.dbPill.textContent = dbOnline()? "DB: online" : "DB: offline"; };
-  async function dbUpsert(p){
-    if(!dbOnline() || syncing) return;
-    const row = { id:p.id, user_id: currentUser.id, name:p.name, quality:p.skill, position:p.position, stamina:p.stamina, active:p.active, side:p.side||null };
-    await supabase.from("players").upsert(row).select("id").single().catch(()=>{});
-  }
-  async function dbDelete(p){
-    if(!dbOnline() || syncing) return;
-    await supabase.from("players").delete().match({ id:p.id, user_id: currentUser.id }).catch(()=>{});
-  }
-  async function dbPull(){
-    if(!supabase || !currentUser) return false;
-    syncing = true;
-    const { data, error } = await supabase.from("players").select("*").eq("user_id", currentUser.id).order("name", { ascending: true });
-    syncing = false;
-    if(error) return false;
-    roster = (data||[]).map(r => normalize({ id:r.id, name:r.name, skill:r.quality, position:r.position, stamina:r.stamina, active:r.active, side:r.side }));
-    abMap = {}; roster.forEach(p=>{ if(p.side==="A"||p.side==="B") abMap[p.id]=p.side; });
-    save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-    renderRoster(); renderTeams(); updateCounts(); makeLink();
-    return true;
-  }
-
-  // ---- Auth ----
+  // ====== Auth wiring ======
   function setAuthUI(){
-    if(currentUser){ els.authStatus.textContent = `Signed in`; els.signOut.style.display="inline-flex"; els.dbPill.textContent="DB: online"; }
-    else { els.authStatus.textContent="Not signed in"; els.signOut.style.display="none"; els.dbPill.textContent="DB: offline"; }
+    if(currentUser){ els.authStatus.textContent = `Signed in`; els.signOut.style.display="inline-flex"; }
+    else { els.authStatus.textContent="Not signed in"; els.signOut.style.display="none"; }
+    setDbPill();
   }
   if(supabase){
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -454,23 +509,41 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       setAuthUI();
       if(currentUser){ await dbPull(); }
     });
-    els.sendMagic.addEventListener("click", async ()=>{
-      const email = els.email.value.trim(); if(!email) return alert("Enter your email first.");
-     const { error } = await supabase.auth.signInWithOtp({
-  email,
-  options: {
-    emailRedirectTo: "https://abstractartifact.github.io/REPO/"
-  }
-});
     els.signOut.addEventListener("click", async ()=>{ await supabase.auth.signOut(); });
   }else{
-    els.sendMagic.disabled = true; els.email.disabled = true; els.authStatus.textContent = "DB not configured";
+    if (els.email) els.email.disabled = true;
+    if (els.sendMagic) els.sendMagic.disabled = true;
+    els.authStatus.textContent = "DB not configured";
   }
 
-  const loaded=tryLoadFromHash();
-  renderRoster(); renderTeams(); updateCounts();
-  if(!loaded) els.shareStatus.textContent="No share link detected — using local roster";
-  setAuthUI();
+  // ====== Bootstrap: handle magic-link redirect + initial session ======
+  (async () => {
+    if (!supabase) {
+      // Local-only mode
+      const loaded=tryLoadFromHash();
+      renderRoster(); renderTeams(); updateCounts();
+      if(!loaded) els.shareStatus.textContent="No share link detected — using local roster";
+      setAuthUI();
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const hasCode = url.hash.includes("code=") || url.searchParams.has("code");
+    if (hasCode) {
+      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+      if (error) console.error("exchange error", error);
+      history.replaceState({}, document.title, url.origin + url.pathname);
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    currentUser = session?.user || null;
+
+    const loaded=tryLoadFromHash();
+    renderRoster(); renderTeams(); updateCounts();
+    if(!loaded) els.shareStatus.textContent="No share link detected — using local roster";
+    setAuthUI();
+    if(currentUser){ await dbPull(); }
+  })();
 })();
 </script>
 </body>
