@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Pickup Lineup — FIFA ’98 (DB + Link, Debug)</title>
+<title>Pickup Lineup — FIFA ’98 (Ultra‑safe)</title>
 <style>
 :root{
   --bg:#0b0f1a; --panel:#111a2c; --panel-2:#0e1626; --text:#f5f7ff; --muted:#9fb0d0;
@@ -40,8 +40,7 @@ h1{ margin:0; font-size:22px; letter-spacing:.8px; text-transform:uppercase; tex
 .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
 label{ font-size:12px; color:var(--muted) }
 input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background:#0b1220; border:1px solid var(--border); border-radius:12px; }
-.btn{ min-height:40px; padding:10px 12px; color:#fff; background:linear-gradient(180deg, #122240, #0f1b33); border:1px solid #2b3d62;
-  border-radius:12px; cursor:pointer; transition:transform .06s, box-shadow .06s; }
+.btn{ min-height:40px; padding:10px 12px; color:#fff; background:linear-gradient(180deg, #122240, #0f1b33); border:1px solid #2b3d62; border-radius:12px; cursor:pointer; transition:transform .06s, box-shadow .06s; }
 .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,163,255,.5), 0 0 0 1px rgba(0,163,255,.35) }
 .btn.gold{ background:linear-gradient(180deg, #ffd100, #caa800); border-color:#ffdf3a; color:#0c0c0c; font-weight:700; box-shadow:0 0 0 1px rgba(255,209,0,.35) }
 .btn.blue{ background:linear-gradient(180deg, #1366a8, #0f4e7a); box-shadow:0 0 0 1px rgba(25,182,255,.35) }
@@ -57,13 +56,13 @@ input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background
 .teams{ display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr)) } .teams.four{ grid-template-columns:repeat(4,minmax(0,1fr)) }
 @media (max-width:900px){ .teams.four{ grid-template-columns:repeat(2,minmax(0,1fr)) } }
 .team-title{ display:flex; align-items:center; justify-content:space-between }
-.kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#0b0e14; border:1px solid var(--border); padding:2px 8px; border-radius:8px; font-size:12px; color:var(--muted) }
+.kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#0b0e14; border:1px solid var(--border); padding:2px 8px; border-radius:8px; font-size:12px; color:#cbd8f4 }
 hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3d62, transparent); margin:12px 0 }
 .section-title{ font-size:13px; letter-spacing:.2px; color:var(--muted); text-transform:uppercase }
 .auth{ display:flex; gap:8px; align-items:center; flex-wrap:wrap } .auth input{ width:auto; min-width:240px }
-.debug{ margin-top:12px; font-size:12px; background:#0b0e14; border:1px dashed #3b5da3; padding:8px; border-radius:10px; color:#cbd8f4; white-space:pre-wrap }
+.debug{ margin-top:12px; font-size:12px; background:#0b0e14; border:1px dashed #3b5da3; padding:8px; border-radius:10px; color:#cbd8f4; white-space:pre-wrap; display:block }
 </style>
-<!-- Use the UMD build so window.supabase exists in all browsers -->
+<!-- UMD build for broad browser support -->
 <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
@@ -81,10 +80,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       </div>
       <div class="auth">
         <input id="email" placeholder="you@example.com" />
-        <button type="button" class="btn small blue" id="sendMagic"
-                onclick="window.__sendMagic && window.__sendMagic()">
-          Email me a sign‑in link
-        </button>
+        <button type="button" class="btn small blue" id="sendMagic" onclick="window.__sendMagic && window.__sendMagic()">Email me a sign‑in link</button>
         <span class="muted" id="authStatus">Not signed in</span>
         <button class="btn small red" id="signOut" style="display:none">Sign out</button>
       </div>
@@ -148,7 +144,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
         </div>
       </div>
       <p class="muted" style="margin:8px 0 0">Sign in (top-right) to sync roster to Supabase. Without sign-in, changes stay local or can be shared via link.</p>
-      <div id="debug" class="debug" style="display:none"></div>
+      <div id="debug" class="debug">Booting…</div>
     </div>
 
     <div id="rosterList" class="grid grid-3" style="margin-top:12px"></div>
@@ -174,360 +170,328 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   <section id="panelAbout" class="card" style="display:none">
     <div class="section-title">How it balances</div>
     <ul>
-      <li>Two teams for &lt;20 active; at 20+ it splits A→A/C and B→B/D (preserves the previous A/B grouping).</li>
+      <li>Two teams for &lt;20 active; at 20+ it splits A→A/C and B→B/D (keeps A/B groups).</li>
       <li>Player attributes: <i>quality</i> (1–5), <i>position</i> (DEF/MID/FWD/ANY), <i>stamina</i> (1–3).</li>
-      <li>Composite score = <code>quality×10 + stamina</code>; a tiny seed‑based jitter provides variety on reshuffle.</li>
-      <li>DB sync via Supabase (optional). RLS ensures only you can read/write your roster when signed in.</li>
     </ul>
-    <p class="muted">CSV: <span class="kbd">name,quality,position,stamina[,active,side]</span> (imports with a <span class="kbd">skill</span> column also work).</p>
   </section>
 </div>
 
 <script>
-window.addEventListener('load', () => {
-  const log = (msg) => {
-    try{
-      const d = document.getElementById('debug');
-      d.style.display = 'block';
-      d.textContent += (d.textContent ? "\n" : "") + msg;
-      console.log("[DEBUG]", msg);
-    }catch(e){}
-  };
+(function(){
+  // ===== DEBUG =====
+  var debugEl = document.getElementById('debug');
+  function log(msg){ try{ debugEl.textContent += (debugEl.textContent?'\n':'') + msg; console.log('[DEBUG]', msg); }catch(e){} }
+  window.onerror = function(message, source, lineno, colno, error){ log('JS ERROR: '+message+' @'+lineno+':'+colno); };
 
-  // ====== CONFIG ======
-  const SUPABASE_URL = "https://jkdvcxdagwpvlhcrbytl.supabase.co";   // ← replace
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";              // ← replace
-  const REDIRECT_URL = "https://abstractartifact.github.io/REPO/";   // ← replace
+  log('JS initialized');
 
-  if (!window.supabase) {
-    log("Supabase JS failed to load. Check the <script> CDN path.");
-  } else {
-    log("Supabase JS loaded.");
-  }
+  // ===== CONFIG =====
+  var SUPABASE_URL = "https://jkdvcxdagwpvlhcrbytl.supabase.co";   // ← replace
+  var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";              // ← replace
+  var REDIRECT_URL = "https://abstractartifact.github.io/REPO/";   // ← replace
 
-  const supabase = (window.supabase && SUPABASE_URL.startsWith("http"))
+  if (!window.supabase) { log('Supabase JS failed to load — check CDN'); }
+  else { log('Supabase JS loaded'); }
+
+  var supabase = (window.supabase && SUPABASE_URL.indexOf('http')===0)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
     : null;
+  if (supabase) log('Supabase client created for '+SUPABASE_URL); else log('DB not configured; running local only');
 
-  const $ = s => document.querySelector(s);
-  const els = {
-    rosterList: $("#rosterList"),
-    teamsWrap: $("#teamsWrap"),
-    teamsCount: $("#teamsCountPill"),
-    countsHint: $("#countsHint"),
-    shareStatus: $("#shareStatus"),
-    dbPill: $("#dbPill"),
-    authStatus: $("#authStatus"),
-    signOut: $("#signOut"),
-    email: $("#email"),
-    sendMagic: $("#sendMagic"),
+  // ===== DOM =====
+  function $(id){ return document.getElementById(id); }
+  var els = {
+    tabRoster: $('tabRoster'), tabTeams: $('tabTeams'), tabAbout: $('tabAbout'),
+    panelRoster: $('panelRoster'), panelTeams: $('panelTeams'), panelAbout: $('panelAbout'),
+    rosterList: $('rosterList'), teamsWrap: $('teamsWrap'), teamsCount: $('teamsCountPill'),
+    countsHint: $('countsHint'), shareStatus: $('shareStatus'),
+    dbPill: $('dbPill'), authStatus: $('authStatus'), signOut: $('signOut'),
+    email: $('email'), sendMagic: $('sendMagic')
   };
-  const KEYS = { roster:"pl_roster_db_v1", abmap:"pl_abmap_db_v1" };
-  let seed = 0, sortMode = "quality_desc", currentUser = null, syncing = false;
 
-  if (!supabase) { log("Client not initialized (missing URL/key). Running in local/link mode."); }
-  else { log("Client created for " + SUPABASE_URL); }
+  // ===== Tabs (explicit) =====
+  function showPanel(id, btn){
+    els.panelRoster.style.display = (id==='panelRoster')?'block':'none';
+    els.panelTeams.style.display  = (id==='panelTeams') ?'block':'none';
+    els.panelAbout.style.display  = (id==='panelAbout') ?'block':'none';
+    els.tabRoster.classList.remove('active'); els.tabTeams.classList.remove('active'); els.tabAbout.classList.remove('active');
+    btn.classList.add('active');
+  }
+  els.tabRoster.addEventListener('click', function(){ showPanel('panelRoster', els.tabRoster); log('Tab: Roster'); });
+  els.tabTeams .addEventListener('click', function(){ showPanel('panelTeams',  els.tabTeams ); renderTeams(); log('Tab: Teams'); });
+  els.tabAbout .addEventListener('click', function(){ showPanel('panelAbout',  els.tabAbout ); log('Tab: About'); });
+  showPanel('panelRoster', els.tabRoster);
 
-  window.__sendMagic = async function () {
-    try {
-      if (!supabase) { alert("DB client not initialized"); log("SendMagic: client null"); return; }
-      const email = els.email.value.trim();
-      if (!email) { alert("Enter your email first."); return; }
+  // ===== Storage & helpers (no TextEncoder/Decoder) =====
+  var KEYS = { roster:"pl_roster_db_v1", abmap:"pl_abmap_db_v1" };
+  var seed = 0, sortMode = "quality_desc", currentUser = null, syncing = false;
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  function load(k,fb){ try{ var v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch(e){ return fb; } }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); }
+  function parseActive(v){ if(v==null||v==="") return true; var s=String(v).toLowerCase(); return ["1","true","yes","y","in","active"].indexOf(s)>=0; }
 
-      els.sendMagic.disabled = true;
-      els.sendMagic.textContent = "Sending…";
-      els.authStatus.textContent = "Sending magic link…";
-      log("Sending OTP to " + email + " with redirect " + REDIRECT_URL);
+  function normalize(p){ return { id:p.id||uid(), name:p.name, skill:+p.skill||+p.quality||3, position:p.position, stamina:+p.stamina, active:(p.active!==false), side:p.side||null }; }
+  var roster = load(KEYS.roster, []).map(normalize);
+  var abMap  = load(KEYS.abmap, {});
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: REDIRECT_URL }
-      });
+  function toCompact(){ return roster.map(function(p){ return [p.name, p.skill, p.position, p.stamina, p.active?1:0, abMap[p.id]||p.side||""]; }); }
+  function fromCompact(arr){
+    var out=[], sideByName={};
+    (arr||[]).forEach(function(a){
+      var n=a[0], s=a[1], po=a[2], st=a[3], a1=a[4], side=a[5];
+      var pos = ["DEF","MID","FWD","ANY"].indexOf(String(po).toUpperCase())>=0 ? String(po).toUpperCase() : "ANY";
+      out.push({id:uid(), name:n, skill:+s||3, position:pos, stamina:Math.max(1,Math.min(3,+st||2)), active:!!a1, side:side||null});
+      if(side==="A"||side==="B") sideByName[n]=side;
+    });
+    var map={}; out.forEach(function(p){ if(sideByName[p.name]) map[p.id]=sideByName[p.name]; });
+    return { roster:out, abMap:map };
+  }
+  function makeLink(){
+    try{
+      var payload={r:toCompact()};
+      var encoded = encodeURIComponent(JSON.stringify(payload)); // simpler than base64, no TextEncoder needed
+      var url = location.origin+location.pathname+'#r='+encoded;
+      history.replaceState(null,'','#r='+encoded);
+      els.shareStatus.textContent = 'Link updated ('+roster.length+' players)';
+      log('Share link updated');
+      return url;
+    }catch(e){ log('Share link error: '+e.message); return ''; }
+  }
+  function tryLoadFromHash(){
+    var m=(location.hash||'').match(/#r=([^&]+)/); if(!m) return false;
+    try{
+      var obj = JSON.parse(decodeURIComponent(m[1]));
+      if(!obj || !obj.r || !obj.r.length) return false;
+      var r=fromCompact(obj.r);
+      roster=r.roster.map(normalize); abMap=r.abMap; save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+      els.shareStatus.textContent='Loaded roster from link ('+roster.length+' players)';
+      log('Loaded roster from link');
+      return true;
+    }catch(e){ els.shareStatus.textContent='Invalid roster link'; log('Link decode error: '+e.message); return false; }
+  }
 
-      if (error) {
-        console.error(error);
-        log("signInWithOtp error: " + (error.message || error.name));
-        els.authStatus.textContent = "Failed to send link";
-      } else {
-        log("OTP request sent OK");
-        els.authStatus.textContent = "Check your email for the sign‑in link";
-      }
-    } catch (e) {
-      console.error(e);
-      log("SendMagic exception: " + e);
-      els.authStatus.textContent = "Error sending link";
-    } finally {
-      els.sendMagic.disabled = false;
-      els.sendMagic.textContent = "Email me a sign‑in link";
-    }
-  };
-  if (els.sendMagic) els.sendMagic.addEventListener("click", window.__sendMagic);
-
-  // ====== Utils, data and app code (unchanged from prior build) ======
-  const djb2 = s => { let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return Math.abs(h); };
-  const jitter = (name, k, scale=.49) => { const v = djb2(name+"#"+k)%1000/1000; return (v*2-1)*scale; };
-  const escapeHtml = s => s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m]));
-  const uid = () => Math.random().toString(36).slice(2,9);
-  const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-  const load = (k,fb) => { try{ const v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch{ return fb; } };
-
-  const normalize = p => ({ id:p.id||uid(), name:p.name, skill:+p.skill||+p.quality||3, position:p.position, stamina:+p.stamina, active:(p.active!==false), side:p.side||null });
-  let roster = load(KEYS.roster, []).map(normalize);
-  let abMap  = load(KEYS.abmap, {});
-
-  const enc = s => { const b=new TextEncoder().encode(s); let bin=""; b.forEach(ch=>bin+=String.fromCharCode(ch)); return btoa(bin); };
-  const dec = b64 => { const bin=atob(b64); const arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new TextDecoder().decode(arr); };
-  const toCompact = () => roster.map(p => [p.name, p.skill, p.position, p.stamina, p.active?1:0, abMap[p.id]||p.side||""]);
-  const fromCompact = (arr) => {
-    const out=[]; const sideByName={};
-    (arr||[]).forEach(a=>{ const [n,s,po,st,a1,side]=a; const pos=["DEF","MID","FWD","ANY"].includes(String(po).toUpperCase())?String(po).toUpperCase():"ANY";
-      out.push({id:uid(), name:n, skill:+s||3, position:pos, stamina:Math.max(1,Math.min(3,+st||2)), active:!!a1, side:side||null}); if(side==="A"||"B") sideByName[n]=side; });
-    const map={}; out.forEach(p=>{ if(sideByName[p.name]) map[p.id]=sideByName[p.name]; }); return {roster:out, abMap:map};
-  };
-  const makeLink = () => { const payload={r:toCompact()}; const b=enc(JSON.stringify(payload)); const url=location.origin+location.pathname+"#r="+b; history.replaceState(null,"","#r="+b);
-    els.shareStatus.textContent=`Link updated (${roster.length} players)`; return url; };
-  const tryLoadFromHash = () => { const m=(location.hash||"").match(/#r=([^&]+)/); if(!m) return false; try{ const obj=JSON.parse(dec(m[1])); if(!obj||!Array.isArray(obj.r)) return false;
-      const r=fromCompact(obj.r); roster=r.roster.map(normalize); abMap=r.abMap; save(KEYS.roster,roster); save(KEYS.abmap,abMap); els.shareStatus.textContent=`Loaded roster from link (${roster.length} players)`; return true;
-    }catch{ els.shareStatus.textContent="Invalid roster link"; return false; } };
-
-  const tabs=[{btn:"#tabRoster",panel:"#panelRoster"},{btn:"#tabTeams",panel:"#panelTeams"},{btn:"#panelAbout",panel:"#panelAbout"}];
-  tabs.forEach(t=>{ const b=document.querySelector(t.btn); b&&b.addEventListener("click",()=>{
-    tabs.forEach(u=>{ const ub=document.querySelector(u.btn), up=document.querySelector(u.panel); ub&&ub.classList.remove("active"); if(up) up.style.display="none"; });
-    b.classList.add("active"); const p=document.querySelector(t.panel); if(p) p.style.display="block";
-    if(t.panel==="#panelTeams") renderTeams();
-  }); });
-
-  const parseActive = v => { if(v==null||v==="") return true; const s=String(v).toLowerCase(); return ["1","true","yes","y","in","active"].includes(s); };
-  const rowsToCSV = rows => rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
-  const download = (filename, text) => { const blob=new Blob([text],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); };
-
-  function updateCounts(){ const active=roster.filter(p=>p.active!==false).length; els.countsHint.textContent=`Active ${active} / Total ${roster.length}`; }
+  // ===== Roster UI =====
+  function updateCounts(){ var active=roster.filter(function(p){return p.active!==false;}).length; els.countsHint.textContent='Active '+active+' / Total '+roster.length; }
   function getSortedRoster(){
-    const arr=[...roster];
-    const byName=(a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:"base"});
-    const byQuality=(a,b)=> (b.skill - a.skill) || (b.stamina - a.stamina) || byName(a,b);
-    const byStamina=(a,b)=> (b.stamina - a.stamina) || (b.skill - a.skill) || byName(a,b);
-    if(sortMode==="alpha_asc") arr.sort(byName);
-    else if(sortMode==="alpha_desc") arr.sort((a,b)=>byName(b,a));
-    else if(sortMode==="stamina_desc") arr.sort(byStamina);
+    var arr=roster.slice();
+    function byName(a,b){ return a.name.localeCompare(b.name, undefined, {sensitivity:'base'}); }
+    function byQuality(a,b){ return (b.skill - a.skill) || (b.stamina - a.stamina) || byName(a,b); }
+    function byStamina(a,b){ return (b.stamina - a.stamina) || (b.skill - a.skill) || byName(a,b); }
+    if(sortMode==='alpha_asc') arr.sort(byName);
+    else if(sortMode==='alpha_desc') arr.sort(function(a,b){ return byName(b,a); });
+    else if(sortMode==='stamina_desc') arr.sort(byStamina);
     else arr.sort(byQuality);
     return arr;
   }
   function renderRoster(){
-    const root=els.rosterList; root.innerHTML="";
+    var root=els.rosterList; root.innerHTML='';
     if(!roster.length){ root.innerHTML='<div class="muted">No players yet. Add or import a CSV — or open a share link.</div>'; return; }
-    getSortedRoster().forEach(p=>{
-      const div=document.createElement("div"); div.className="player"+(p.active===false?" out":"");
-      div.innerHTML=`
-        <div>
-          <div><b>${escapeHtml(p.name)}</b> ${p.active===false?'<span class="pill">OUT</span>':''}</div>
-          <div class="muted" style="font-size:12px">${p.position} · Quality ${p.skill} · Stamina ${p.stamina}</div>
-        </div>
-        <div class="row">
-          <button class="btn small" data-act="toggle">${p.active!==false?'Set OUT':'Set IN'}</button>
-          <button class="btn small" data-act="skp">Quality +</button>
-          <button class="btn small" data-act="skm">Quality −</button>
-          <button class="btn small" data-act="stp">Sta +</button>
-          <button class="btn small" data-act="stm">Sta −</button>
-          <button class="btn small red" data-act="del">Delete</button>
-        </div>`;
-      div.querySelectorAll("button").forEach(btn=>{
-        btn.addEventListener("click",async()=>{
-          const act=btn.getAttribute("data-act");
-          if(act==="del"){ delete abMap[p.id]; roster=roster.filter(x=>x!==p); if(currentUser) await dbDelete(p); }
-          else if(act==="skp"){ p.skill=Math.min(5,p.skill+1); if(currentUser) await dbUpsert(p); }
-          else if(act==="skm"){ p.skill=Math.max(1,p.skill-1); if(currentUser) await dbUpsert(p); }
-          else if(act==="stp"){ p.stamina=Math.min(3,p.stamina+1); if(currentUser) await dbUpsert(p); }
-          else if(act==="stm"){ p.stamina=Math.max(1,p.stamina-1); if(currentUser) await dbUpsert(p); }
-          else if(act==="toggle"){ p.active=!(p.active!==false?true:false); if(currentUser) await dbUpsert(p); }
-          save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-          renderRoster(); renderTeams(); updateCounts(); makeLink();
-        });
-      });
+    getSortedRoster().forEach(function(p){
+      var div=document.createElement('div'); div.className='player'+(p.active===false?' out':'');
+      div.innerHTML=
+        '<div>'+
+          '<div><b>'+escapeHtml(p.name)+'</b> '+(p.active===false?'<span class="pill">OUT</span>':'')+'</div>'+
+          '<div class="muted" style="font-size:12px">'+p.position+' · Quality '+p.skill+' · Stamina '+p.stamina+'</div>'+
+        '</div>'+
+        '<div class="row">'+
+          '<button class="btn small" data-act="toggle">'+(p.active!==false?'Set OUT':'Set IN')+'</button>'+
+          '<button class="btn small" data-act="skp">Quality +</button>'+
+          '<button class="btn small" data-act="skm">Quality −</button>'+
+          '<button class="btn small" data-act="stp">Sta +</button>'+
+          '<button class="btn small" data-act="stm">Sta −</button>'+
+          '<button class="btn small red" data-act="del">Delete</button>'+
+        '</div>';
+      var btns = div.querySelectorAll('button');
+      for(var i=0;i<btns.length;i++){
+        btns[i].addEventListener('click', (function(btn){
+          return function(){
+            var act=btn.getAttribute('data-act');
+            if(act==='del'){ delete abMap[p.id]; roster=roster.filter(function(x){return x!==p;}); }
+            else if(act==='skp'){ p.skill=Math.min(5,p.skill+1); }
+            else if(act==='skm'){ p.skill=Math.max(1,p.skill-1); }
+            else if(act==='stp'){ p.stamina=Math.min(3,p.stamina+1); }
+            else if(act==='stm'){ p.stamina=Math.max(1,p.stamina-1); }
+            else if(act==='toggle'){ p.active=!(p.active!==false?true:false); }
+            save(KEYS.roster,roster);
+            renderRoster(); renderTeams(); updateCounts(); makeLink();
+          };
+        })(btns[i]));
+      }
       root.appendChild(div);
     });
   }
 
-  const score = p => p.skill*10 + p.stamina;
-  const sortWithJitter = list => [...list].sort((a,b)=>{ const sa=score(a)+jitter(a.name,seed,.49), sb=score(b)+jitter(b.name,seed,.49); return sb!==sa? sb-sa : a.name.localeCompare(b.name); });
-  function computeBalancedTeams(players, names){
-    const T=names.map(n=>({ name:n, players:[], total:0, pos:{DEF:0,MID:0,FWD:0,ANY:0} }));
-    const totals=players.reduce((m,p)=> (m[p.position]=(m[p.position]||0)+1, m), {});
-    const target=k=>Math.round((totals[k]||0)/names.length);
-    sortWithJitter(players).forEach(p=>{
-      const pS=score(p); let best=0, bestVal=Infinity;
-      T.forEach((t,i)=>{ const sizePenalty=t.players.length*2; const posShort=Math.max(0, target(p.position)-(t.pos[p.position]||0));
-        const val=(t.total+pS)+sizePenalty - posShort*3 + jitter(p.name+":"+t.name,seed,.49); if(val<bestVal){ bestVal=val; best=i; } });
-      const t=T[best]; t.players.push(p); t.total+=pS; t.pos[p.position]=(t.pos[p.position]||0)+1;
+  // ===== Teams (same logic; no DB writes here) =====
+  function score(p){ return p.skill*10 + p.stamina; }
+  function djb2(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return Math.abs(h); }
+  function jitter(name, k, scale){ if(scale==null) scale=.49; var v = djb2(name+'#'+k)%1000/1000; return (v*2-1)*scale; }
+  function sortWithJitter(list){
+    return list.slice().sort(function(a,b){
+      var sa=score(a)+jitter(a.name,seed,.49), sb=score(b)+jitter(b.name,seed,.49);
+      return sb!==sa? sb-sa : a.name.localeCompare(b.name);
     });
-    T.forEach(t=>{ t.avgSkill=t.players.length?(t.players.reduce((s,p)=>s+p.skill,0)/t.players.length):0; t.avgStamina=t.players.length?(t.players.reduce((s,p)=>s+p.stamina,0)/t.players.length):0; });
-    return T;
   }
-  function rememberAB(two){
-    const map={};
-    two[0].players.forEach(p=>{ map[p.id]="A"; p.side="A"; if(currentUser) dbUpsert(p); });
-    two[1].players.forEach(p=>{ map[p.id]="B"; p.side="B"; if(currentUser) dbUpsert(p); });
-    abMap=map; save(KEYS.abmap,abMap);
+  function computeBalancedTeams(players, names){
+    var T=names.map(function(n){ return { name:n, players:[], total:0, pos:{DEF:0,MID:0,FWD:0,ANY:0} }; });
+    var totals={}; players.forEach(function(p){ totals[p.position]=(totals[p.position]||0)+1; });
+    function target(k){ return Math.round((totals[k]||0)/names.length); }
+    sortWithJitter(players).forEach(function(p){
+      var pS=score(p), best=0, bestVal=Infinity;
+      for(var i=0;i<T.length;i++){
+        var t=T[i], sizePenalty=t.players.length*2, posShort=Math.max(0, target(p.position)-(t.pos[p.position]||0));
+        var val=(t.total+pS)+sizePenalty - posShort*3 + jitter(p.name+':'+t.name,seed,.49);
+        if(val<bestVal){ bestVal=val; best=i; }
+      }
+      var tt=T[best]; tt.players.push(p); tt.total+=pS; tt.pos[p.position]=(tt.pos[p.position]||0)+1;
+    });
+    T.forEach(function(t){
+      t.avgSkill=t.players.length?(t.players.reduce(function(s,p){return s+p.skill;},0)/t.players.length):0;
+      t.avgStamina=t.players.length?(t.players.reduce(function(s,p){return s+p.stamina;},0)/t.players.length):0;
+    });
+    return T;
   }
   function buildTeams(active){
     if(active.length===0) return [];
-    if(active.length<20){ const two=computeBalancedTeams(active,["Team A","Team B"]); rememberAB(two); return two; }
-    const A=[],B=[]; let sumA=0,sumB=0;
-    active.forEach(p=>{ const side=abMap[p.id]||p.side; if(side==="A"){A.push(p); sumA+=score(p);} else if(side==="B"){B.push(p); sumB+=score(p);} else {
-      if(sumA<=sumB){ A.push(p); sumA+=score(p); abMap[p.id]="A"; p.side="A"; if(currentUser) dbUpsert(p); } else { B.push(p); sumB+=score(p); abMap[p.id]="B"; p.side="B"; if(currentUser) dbUpsert(p); } } });
+    if(active.length<20){ var two=computeBalancedTeams(active,["Team A","Team B"]); return two; }
+    // If 20+, split by remembered A/B where available (abMap), else balance into A/B first
+    var A=[],B=[], sumA=0,sumB=0;
+    active.forEach(function(p){
+      var side=abMap[p.id]||p.side;
+      if(side==='A'){A.push(p); sumA+=score(p);}
+      else if(side==='B'){B.push(p); sumB+=score(p);}
+      else { if(sumA<=sumB){ A.push(p); sumA+=score(p); abMap[p.id]='A'; } else { B.push(p); sumB+=score(p); abMap[p.id]='B'; } }
+    });
     save(KEYS.abmap,abMap);
-    const [TA,TC]=computeBalancedTeams(A,["Team A","Team C"]); const [TB,TD]=computeBalancedTeams(B,["Team B","Team D"]); return [TA,TB,TC,TD];
+    var AC=computeBalancedTeams(A,["Team A","Team C"]);
+    var BD=computeBalancedTeams(B,["Team B","Team D"]);
+    return [AC[0],BD[0],AC[1],BD[1]];
   }
   function renderTeams(){
-    const active=roster.filter(p=>p.active!==false);
-    const teams=buildTeams(active);
-    document.getElementById("teamsCountPill").textContent=`${teams.length} team${teams.length>1?"s":""}`;
-    document.getElementById("teamsWrap").className="teams"+(teams.length===4?" four":"");
-    document.getElementById("teamsWrap").innerHTML="";
-    teams.forEach(t=>{
-      const side=(t.name==="Team A"||t.name==="Team C")?"A":"B";
-      const card=document.createElement("div"); card.className="card";
-      card.innerHTML=`
-        <div class="team-title">
-          <h3 style="margin:0">${t.name}</h3>
-          <span class="pill ${side}">Players ${t.players.length}</span>
-        </div>
-        <div class="muted" style="font-size:12px; margin-top:6px">Avg quality ${t.avgSkill.toFixed(2)} · Avg stamina ${t.avgStamina.toFixed(2)}</div>
-        <ul class="team-list" style="list-style:none; padding:0; margin:8px 0 0; display:grid; gap:6px"></ul>`;
-      const ul=card.querySelector(".team-list");
-      t.players.forEach(p=>{ const li=document.createElement("li"); li.className="player";
-        li.innerHTML=`<span>${escapeHtml(p.name)}</span><span class="muted" style="font-size:12px">${p.position} · Q${p.skill}/St${p.stamina}</span>`;
+    var active=roster.filter(function(p){return p.active!==false;});
+    var teams=buildTeams(active);
+    els.teamsCount.textContent = teams.length + ' team' + (teams.length>1?'s':'');
+    els.teamsWrap.className='teams'+(teams.length===4?' four':'');
+    els.teamsWrap.innerHTML='';
+    teams.forEach(function(t){
+      var side=(t.name==='Team A'||t.name==='Team C')?'A':'B';
+      var card=document.createElement('div'); card.className='card';
+      card.innerHTML=
+        '<div class="team-title">'+
+          '<h3 style="margin:0">'+t.name+'</h3>'+
+          '<span class="pill '+side+'">Players '+t.players.length+'</span>'+
+        '</div>'+
+        '<div class="muted" style="font-size:12px; margin-top:6px">Avg quality '+t.avgSkill.toFixed(2)+' · Avg stamina '+t.avgStamina.toFixed(2)+'</div>'+
+        '<ul class="team-list" style="list-style:none; padding:0; margin:8px 0 0; display:grid; gap:6px"></ul>';
+      var ul=card.querySelector('.team-list');
+      t.players.forEach(function(p){
+        var li=document.createElement('li'); li.className='player';
+        li.innerHTML='<span>'+escapeHtml(p.name)+'</span><span class="muted" style="font-size:12px">'+p.position+' · Q'+p.skill+'/St'+p.stamina+'</span>';
         ul.appendChild(li);
       });
-      document.getElementById("teamsWrap").appendChild(card);
+      els.teamsWrap.appendChild(card);
     });
   }
 
-  const dbOnline = () => !!(supabase && currentUser);
-  const setDbPill = () => { document.getElementById("dbPill").textContent = dbOnline()? "DB: online" : "DB: offline"; };
+  // ===== CSV & Sorting =====
+  function rowsToCSV(rows){ return rows.map(function(r){ return r.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(','); }).join('\n'); }
+  function download(filename, text){ var blob=new Blob([text],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
 
-  async function dbUpsert(p){
-    if(!dbOnline() || syncing) return;
-    const row = { id:p.id, user_id: currentUser.id, name:p.name, quality:p.skill, position:p.position, stamina:p.stamina, active:p.active, side:p.side||null };
-    const { error } = await supabase.from("players").upsert(row).select("id").single();
-    if (error) log("upsert error: " + error.message);
-  }
-  async function dbDelete(p){
-    if(!dbOnline() || syncing) return;
-    const { error } = await supabase.from("players").delete().match({ id:p.id, user_id: currentUser.id });
-    if (error) log("delete error: " + error.message);
-  }
-  async function dbPull(){
-    if(!supabase || !currentUser) return false;
-    syncing = true;
-    const { data, error } = await supabase.from("players").select("*").eq("user_id", currentUser.id).order("name", { ascending: true });
-    syncing = false;
-    if(error) { log("pull error: " + error.message); return false; }
-    roster = (data||[]).map(r => normalize({ id:r.id, name:r.name, skill:r.quality, position:r.position, stamina:r.stamina, active:r.active, side:r.side }));
-    abMap = {}; roster.forEach(p=>{ if(p.side==="A"||p.side==="B") abMap[p.id]=p.side; });
-    save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-    renderRoster(); renderTeams(); updateCounts(); makeLink(); setDbPill();
-    return true;
-  }
-
-  document.getElementById("addBtn").addEventListener("click",async()=>{
-    const name=document.getElementById("name").value.trim(); const skill=+document.getElementById("skill").value; const position=document.getElementById("position").value; const stamina=+document.getElementById("stamina").value;
-    if(!name) return; const p={id:uid(), name, skill, position, stamina, active:true, side:null};
-    roster.push(p); save(KEYS.roster,roster); document.getElementById("name").value="";
-    if(currentUser) await dbUpsert(p);
+  $('addBtn').addEventListener('click', function(){
+    var name=$('name').value.trim(); var skill=+$('skill').value; var position=$('position').value; var stamina=+$('stamina').value;
+    if(!name) return; var p={id:uid(), name:name, skill:skill, position:position, stamina:stamina, active:true, side:null};
+    roster.push(p); save(KEYS.roster,roster); $('name').value='';
     renderRoster(); renderTeams(); updateCounts(); makeLink();
   });
-  document.getElementById("allInBtn").addEventListener("click",async()=>{ roster.forEach(p=>p.active=true); save(KEYS.roster,roster); if(currentUser) await Promise.all(roster.map(dbUpsert)); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
-  document.getElementById("allOutBtn").addEventListener("click",async()=>{ roster.forEach(p=>p.active=false); save(KEYS.roster,roster); if(currentUser) await Promise.all(roster.map(dbUpsert)); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
+  $('allInBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=true;}); save(KEYS.roster,roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
+  $('allOutBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=false;}); save(KEYS.roster,roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
 
-  const reseed = ()=>{ seed = (seed * 1664525 + 1013904223) >>> 0; };
-  const btnReshuffle = document.getElementById("reshuffleTeamsBtn");
-  if(btnReshuffle){ btnReshuffle.addEventListener("click", ()=>{ reseed(); renderTeams(); }); }
+  function reseed(){ seed = (seed * 1664525 + 1013904223) >>> 0; }
+  $('reshuffleTeamsBtn').addEventListener('click', function(){ reseed(); renderTeams(); });
 
-  document.getElementById("exportRosterBtn").addEventListener("click", ()=>{
-    const rows=[["name","quality","position","stamina","active","side"]];
-    roster.forEach(p=>rows.push([p.name,p.skill,p.position,p.stamina,p.active?1:0,p.side||""]));
-    download("roster.csv", rowsToCSV(rows));
+  $('exportRosterBtn').addEventListener('click', function(){
+    var rows=[["name","quality","position","stamina","active","side"]];
+    roster.forEach(function(p){ rows.push([p.name,p.skill,p.position,p.stamina,p.active?1:0,p.side||""]); });
+    download('roster.csv', rowsToCSV(rows));
   });
-  document.getElementById("exportTeamsBtn").addEventListener("click", ()=>{
-    const active=roster.filter(p=>p.active!==false); const teams=buildTeams(active);
-    const rows=[["Team","Player","Quality","Position","Stamina"]];
-    teams.forEach(t=>t.players.forEach(p=>rows.push([t.name,p.name,p.skill,p.position,p.stamina])));
-    download(`pickup_teams_${teams.length}t_${active.length}p.csv`, rowsToCSV(rows));
+  $('exportTeamsBtn').addEventListener('click', function(){
+    var active=roster.filter(function(p){return p.active!==false;}); var teams=buildTeams(active);
+    var rows=[["Team","Player","Quality","Position","Stamina"]];
+    teams.forEach(function(t){ t.players.forEach(function(p){ rows.push([t.name,p.name,p.skill,p.position,p.stamina]); }); });
+    download('pickup_teams_'+teams.length+'t_'+active.length+'p.csv', rowsToCSV(rows));
   });
-  document.getElementById("importFile").addEventListener("change", async e=>{
-    const f=e.target.files && e.target.files[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=async()=>{
+  $('importFile').addEventListener('change', function(e){
+    var f=e.target.files && e.target.files[0]; if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(){
       try{
-        const lines=String(reader.result||"").trim().split(/\r?\n/).filter(Boolean);
-        const out=[];
-        for(const line of lines){
-          const cols=line.split(",").map(c=>c.trim());
-          if(cols[0].toLowerCase()==="name") continue;
-          const [nm,skOrQ,pos,st,act,side] = cols;
+        var lines=String(reader.result||'').trim().split(/\r?\n/).filter(Boolean);
+        var out=[];
+        for(var i=0;i<lines.length;i++){
+          var cols=lines[i].split(',').map(function(c){return c.trim();});
+          if(cols[0].toLowerCase()==='name') continue;
+          var nm=cols[0], skOrQ=cols[1], pos=cols[2], st=cols[3], act=cols[4], side=cols[5];
           if(!nm) continue;
-          const position=["DEF","MID","FWD","ANY"].includes((pos||"ANY").toUpperCase())?(pos||"ANY").toUpperCase():"ANY";
-          const skill=Math.max(1,Math.min(5, Number(skOrQ)||3));
-          const stamina=Math.max(1,Math.min(3, Number(st)||2));
-          const active=parseActive(act);
-          out.push({id:uid(), name:nm, skill, position, stamina, active, side: side||null});
+          var position=['DEF','MID','FWD','ANY'].indexOf((pos||'ANY').toUpperCase())>=0 ? (pos||'ANY').toUpperCase() : 'ANY';
+          var skill=Math.max(1,Math.min(5, Number(skOrQ)||3));
+          var stamina=Math.max(1,Math.min(3, Number(st)||2));
+          var active=parseActive(act);
+          out.push({id:uid(), name:nm, skill:skill, position:position, stamina:stamina, active:active, side: side||null});
         }
-        roster=out; abMap={}; roster.forEach(p=>{ if(p.side==="A"||p.side==="B") abMap[p.id]=p.side; });
-        save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-        if(currentUser) await Promise.all(roster.map(dbUpsert));
+        roster=out; abMap={}; save(KEYS.roster,roster); save(KEYS.abmap,abMap);
         renderRoster(); renderTeams(); updateCounts(); makeLink();
-      }catch(err){ alert("Import failed. CSV should look like: name,quality,position,stamina[,active,side]"); log("import error: " + err.message); }
+      }catch(err){ alert('Import failed. CSV should look like: name,quality,position,stamina[,active,side]'); log('import error: '+err.message); }
     };
-    reader.readAsText(f); e.target.value="";
+    reader.readAsText(f); e.target.value='';
   });
 
-  const sortSel=document.getElementById("sortMode");
-  if(sortSel){ sortSel.addEventListener("change", e=>{ sortMode=e.target.value; renderRoster(); }); }
-  document.getElementById("makeLinkBtn").addEventListener("click", makeLink);
-  document.getElementById("copyLinkBtn").addEventListener("click", async ()=>{ const url=makeLink(); try{ await navigator.clipboard.writeText(url); els.shareStatus.textContent="Copied link to clipboard"; } catch{ els.shareStatus.textContent=url; } });
+  $('sortMode').addEventListener('change', function(e){ sortMode=e.target.value; renderRoster(); });
+  $('makeLinkBtn').addEventListener('click', makeLink);
+  $('copyLinkBtn').addEventListener('click', function(){ var url=makeLink(); try{ navigator.clipboard.writeText(url); els.shareStatus.textContent='Copied link'; } catch(e){ els.shareStatus.textContent=url; } });
 
-  function setAuthUI(){
-    if(currentUser){ document.getElementById("authStatus").textContent = "Signed in"; document.getElementById("signOut").style.display="inline-flex"; }
-    else { document.getElementById("authStatus").textContent="Not signed in"; document.getElementById("signOut").style.display="none"; }
-    setDbPill();
-  }
+  // ===== Auth wiring (guarded) =====
+  function setDbPill(){ els.dbPill.textContent = (supabase && currentUser) ? 'DB: online' : 'DB: offline'; }
+  function setAuthUI(){ els.authStatus.textContent = currentUser ? 'Signed in' : 'Not signed in'; $('signOut').style.display = currentUser ? 'inline-flex' : 'none'; setDbPill(); }
 
-  if(supabase){
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      log("auth state: " + event);
-      currentUser = session && session.user ? session.user : null;
+  if (supabase){
+    supabase.auth.onAuthStateChange(function(event, session){
+      log('auth state: '+event);
+      currentUser = (session && session.user) ? session.user : null;
       setAuthUI();
-      if(currentUser){ await dbPull(); }
     });
-    document.getElementById("signOut").addEventListener("click", async ()=>{ await supabase.auth.signOut(); });
+    $('signOut').addEventListener('click', function(){ supabase.auth.signOut(); });
   }
 
-  (async () => {
-    const url = new URL(window.location.href);
-    const hasCode = url.hash.includes("code=") || url.searchParams.has("code");
-    if (hasCode && supabase) {
-      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-      if (error) { log("exchange error: " + error.message); }
-      history.replaceState({}, document.title, url.origin + url.pathname);
-      log("exchanged code for session");
+  // Expose the click handler globally for the inline onclick fallback
+  window.__sendMagic = function () {
+    log('sendMagic clicked');
+    try {
+      if (!supabase) { alert('DB client not initialized'); return; }
+      var email = els.email.value.trim();
+      if (!email) { alert('Enter your email first.'); return; }
+      els.sendMagic.disabled = true; els.sendMagic.textContent = 'Sending…'; els.authStatus.textContent = 'Sending magic link…';
+      supabase.auth.signInWithOtp({ email: email, options: { emailRedirectTo: REDIRECT_URL } }).then(function(r){
+        if (r && r.error){ log('signInWithOtp error: '+r.error.message); els.authStatus.textContent = 'Failed to send link'; }
+        else { log('OTP request sent OK'); els.authStatus.textContent = 'Check your email for the sign‑in link'; }
+        els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
+      }).catch(function(e){
+        log('SendMagic exception: '+e.message); els.authStatus.textContent = 'Error sending link';
+        els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
+      });
+    } catch (e) {
+      log('SendMagic fatal: '+e.message);
+      els.authStatus.textContent = 'Error sending link';
+      els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
     }
+  };
 
-    const loaded=tryLoadFromHash();
-    renderRoster(); renderTeams(); updateCounts();
-    if(!loaded) document.getElementById("shareStatus").textContent="No share link detected — using local roster";
-
-    if (supabase) {
-      const { data: { session } } = await supabase.auth.getSession();
-      currentUser = session?.user || null;
-      log("initial session: " + (currentUser ? "present" : "null"));
-      setAuthUI();
-      if(currentUser){ await dbPull(); }
-    } else {
-      setAuthUI();
-    }
-  })();
-});
+  // ===== Boot =====
+  var loaded = tryLoadFromHash();
+  renderRoster(); renderTeams(); updateCounts();
+  if(!loaded) els.shareStatus.textContent='No share link detected — using local roster';
+  setAuthUI();
+  log('Boot complete');
+})();
 </script>
 </body>
 </html>
