@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Pickup Lineup — FIFA ’98 (Ultra‑safe)</title>
+<title>Pickup Lineup — FIFA ’98 (DB Sync)</title>
 <style>
 :root{
   --bg:#0b0f1a; --panel:#111a2c; --panel-2:#0e1626; --text:#f5f7ff; --muted:#9fb0d0;
@@ -41,7 +41,7 @@ h1{ margin:0; font-size:22px; letter-spacing:.8px; text-transform:uppercase; tex
 label{ font-size:12px; color:var(--muted) }
 input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background:#0b1220; border:1px solid var(--border); border-radius:12px; }
 .btn{ min-height:40px; padding:10px 12px; color:#fff; background:linear-gradient(180deg, #122240, #0f1b33); border:1px solid #2b3d62; border-radius:12px; cursor:pointer; transition:transform .06s, box-shadow .06s; }
-.btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,163,255,.5), 0 0 0 1px rgba(0,163,255,.35) }
+.btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,163,255,.5), 0 0 0 1px rgba(25,182,255,.35) }
 .btn.gold{ background:linear-gradient(180deg, #ffd100, #caa800); border-color:#ffdf3a; color:#0c0c0c; font-weight:700; box-shadow:0 0 0 1px rgba(255,209,0,.35) }
 .btn.blue{ background:linear-gradient(180deg, #1366a8, #0f4e7a); box-shadow:0 0 0 1px rgba(25,182,255,.35) }
 .btn.green{ background:linear-gradient(180deg, #0b5a39, #0a4a30) }
@@ -62,7 +62,6 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
 .auth{ display:flex; gap:8px; align-items:center; flex-wrap:wrap } .auth input{ width:auto; min-width:240px }
 .debug{ margin-top:12px; font-size:12px; background:#0b0e14; border:1px dashed #3b5da3; padding:8px; border-radius:10px; color:#cbd8f4; white-space:pre-wrap; display:block }
 </style>
-<!-- UMD build for broad browser support -->
 <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
@@ -114,12 +113,13 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     </div>
 
     <hr />
-    <div class="row" style="align-items:flex-start">
+    <div class="row" style="align-items:flex-start; gap:8px; flex-wrap:wrap">
       <button class="btn" id="exportTeamsBtn">Export teams (CSV)</button>
       <button class="btn" id="exportRosterBtn">Export roster (CSV)</button>
       <label class="btn" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer">
         <span>Import roster (CSV)</span><input type="file" id="importFile" accept=".csv" style="display:none" />
       </label>
+
       <div class="row" style="align-items:center">
         <label for="sortMode">Sort</label>
         <select id="sortMode">
@@ -129,21 +129,23 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
           <option value="stamina_desc">Stamina ↓</option>
         </select>
       </div>
+
+      <span class="pill" id="dbPill">DB: offline</span>
+      <button class="btn blue" id="dbPushBtn" disabled>Sync local → DB</button>
+      <button class="btn blue" id="dbPullBtn" disabled>Pull DB → local</button>
     </div>
 
     <div class="card" style="margin-top:12px">
       <div class="split">
         <div>
-          <div class="section-title">Persistent roster (DB or link)</div>
+          <div class="section-title">Link sharing</div>
           <div class="muted" id="shareStatus"></div>
         </div>
         <div class="row">
           <button class="btn small blue" id="makeLinkBtn">Make shareable link</button>
           <button class="btn small blue" id="copyLinkBtn">Copy link</button>
-          <span class="pill" id="dbPill">DB: offline</span>
         </div>
       </div>
-      <p class="muted" style="margin:8px 0 0">Sign in (top-right) to sync roster to Supabase. Without sign-in, changes stay local or can be shared via link.</p>
       <div id="debug" class="debug">Booting…</div>
     </div>
 
@@ -183,12 +185,10 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   function log(msg){ try{ debugEl.textContent += (debugEl.textContent?'\n':'') + msg; console.log('[DEBUG]', msg); }catch(e){} }
   window.onerror = function(message, source, lineno, colno, error){ log('JS ERROR: '+message+' @'+lineno+':'+colno); };
 
-  log('JS initialized');
-
   // ===== CONFIG =====
-  var SUPABASE_URL = "https://jkdvcxdagwpvlhcrbytl.supabase.co";   // ← replace
+  var SUPABASE_URL  = "https://jkdvcxdagwpvlhcrbytl.supabase.co;   // ← replace
   var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";              // ← replace
-  var REDIRECT_URL = "https://abstractartifact.github.io/pickup/";   // ← replace
+  var REDIRECT_URL  = "https://abstractartifact.github.io/pickup/index.html";   // ← replace (explicit file)
 
   if (!window.supabase) { log('Supabase JS failed to load — check CDN'); }
   else { log('Supabase JS loaded'); }
@@ -206,14 +206,15 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     rosterList: $('rosterList'), teamsWrap: $('teamsWrap'), teamsCount: $('teamsCountPill'),
     countsHint: $('countsHint'), shareStatus: $('shareStatus'),
     dbPill: $('dbPill'), authStatus: $('authStatus'), signOut: $('signOut'),
-    email: $('email'), sendMagic: $('sendMagic')
+    email: $('email'), sendMagic: $('sendMagic'),
+    dbPushBtn: $('dbPushBtn'), dbPullBtn: $('dbPullBtn')
   };
 
-  // ===== Tabs (explicit) =====
+  // ===== Tabs =====
   function showPanel(id, btn){
     els.panelRoster.style.display = (id==='panelRoster')?'block':'none';
-    els.panelTeams.style.display  = (id==='panelTeams') ?'block':'none';
-    els.panelAbout.style.display  = (id==='panelAbout') ?'block':'none';
+    els.panelTeams .style.display = (id==='panelTeams') ?'block':'none';
+    els.panelAbout .style.display = (id==='panelAbout') ?'block':'none';
     els.tabRoster.classList.remove('active'); els.tabTeams.classList.remove('active'); els.tabAbout.classList.remove('active');
     btn.classList.add('active');
   }
@@ -222,9 +223,10 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   els.tabAbout .addEventListener('click', function(){ showPanel('panelAbout',  els.tabAbout ); log('Tab: About'); });
   showPanel('panelRoster', els.tabRoster);
 
-  // ===== Storage & helpers (no TextEncoder/Decoder) =====
+  // ===== Storage & helpers =====
   var KEYS = { roster:"pl_roster_db_v1", abmap:"pl_abmap_db_v1" };
   var seed = 0, sortMode = "quality_desc", currentUser = null, syncing = false;
+
   function uid(){ return Math.random().toString(36).slice(2,9); }
   function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function load(k,fb){ try{ var v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch(e){ return fb; } }
@@ -235,6 +237,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   var roster = load(KEYS.roster, []).map(normalize);
   var abMap  = load(KEYS.abmap, {});
 
+  // ===== Link sharing (encodeURIComponent instead of base64) =====
   function toCompact(){ return roster.map(function(p){ return [p.name, p.skill, p.position, p.stamina, p.active?1:0, abMap[p.id]||p.side||""]; }); }
   function fromCompact(arr){
     var out=[], sideByName={};
@@ -250,7 +253,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   function makeLink(){
     try{
       var payload={r:toCompact()};
-      var encoded = encodeURIComponent(JSON.stringify(payload)); // simpler than base64, no TextEncoder needed
+      var encoded = encodeURIComponent(JSON.stringify(payload));
       var url = location.origin+location.pathname+'#r='+encoded;
       history.replaceState(null,'','#r='+encoded);
       els.shareStatus.textContent = 'Link updated ('+roster.length+' players)';
@@ -307,12 +310,12 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
         btns[i].addEventListener('click', (function(btn){
           return function(){
             var act=btn.getAttribute('data-act');
-            if(act==='del'){ delete abMap[p.id]; roster=roster.filter(function(x){return x!==p;}); }
-            else if(act==='skp'){ p.skill=Math.min(5,p.skill+1); }
-            else if(act==='skm'){ p.skill=Math.max(1,p.skill-1); }
-            else if(act==='stp'){ p.stamina=Math.min(3,p.stamina+1); }
-            else if(act==='stm'){ p.stamina=Math.max(1,p.stamina-1); }
-            else if(act==='toggle'){ p.active=!(p.active!==false?true:false); }
+            if(act==='del'){ delete abMap[p.id]; roster=roster.filter(function(x){return x!==p;}); if(dbOnline()) dbDelete(p); }
+            else if(act==='skp'){ p.skill=Math.min(5,p.skill+1); if(dbOnline()) dbUpsert(p); }
+            else if(act==='skm'){ p.skill=Math.max(1,p.skill-1); if(dbOnline()) dbUpsert(p); }
+            else if(act==='stp'){ p.stamina=Math.min(3,p.stamina+1); if(dbOnline()) dbUpsert(p); }
+            else if(act==='stm'){ p.stamina=Math.max(1,p.stamina-1); if(dbOnline()) dbUpsert(p); }
+            else if(act==='toggle'){ p.active=!(p.active!==false?true:false); if(dbOnline()) dbUpsert(p); }
             save(KEYS.roster,roster);
             renderRoster(); renderTeams(); updateCounts(); makeLink();
           };
@@ -322,7 +325,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     });
   }
 
-  // ===== Teams (same logic; no DB writes here) =====
+  // ===== Teams =====
   function score(p){ return p.skill*10 + p.stamina; }
   function djb2(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return Math.abs(h); }
   function jitter(name, k, scale){ if(scale==null) scale=.49; var v = djb2(name+'#'+k)%1000/1000; return (v*2-1)*scale; }
@@ -354,7 +357,6 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   function buildTeams(active){
     if(active.length===0) return [];
     if(active.length<20){ var two=computeBalancedTeams(active,["Team A","Team B"]); return two; }
-    // If 20+, split by remembered A/B where available (abMap), else balance into A/B first
     var A=[],B=[], sumA=0,sumB=0;
     active.forEach(function(p){
       var side=abMap[p.id]||p.side;
@@ -393,7 +395,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     });
   }
 
-  // ===== CSV & Sorting =====
+  // ===== CSV, Sorting, Buttons =====
   function rowsToCSV(rows){ return rows.map(function(r){ return r.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(','); }).join('\n'); }
   function download(filename, text){ var blob=new Blob([text],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
 
@@ -401,10 +403,11 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
     var name=$('name').value.trim(); var skill=+$('skill').value; var position=$('position').value; var stamina=+$('stamina').value;
     if(!name) return; var p={id:uid(), name:name, skill:skill, position:position, stamina:stamina, active:true, side:null};
     roster.push(p); save(KEYS.roster,roster); $('name').value='';
+    if(dbOnline()) dbUpsert(p);
     renderRoster(); renderTeams(); updateCounts(); makeLink();
   });
-  $('allInBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=true;}); save(KEYS.roster,roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
-  $('allOutBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=false;}); save(KEYS.roster,roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
+  $('allInBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=true;}); save(KEYS.roster,roster); if(dbOnline()) bulkUpsert(roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
+  $('allOutBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=false;}); save(KEYS.roster,roster); if(dbOnline()) bulkUpsert(roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
 
   function reseed(){ seed = (seed * 1664525 + 1013904223) >>> 0; }
   $('reshuffleTeamsBtn').addEventListener('click', function(){ reseed(); renderTeams(); });
@@ -439,6 +442,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
           out.push({id:uid(), name:nm, skill:skill, position:position, stamina:stamina, active:active, side: side||null});
         }
         roster=out; abMap={}; save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+        if(dbOnline()) bulkUpsert(roster);
         renderRoster(); renderTeams(); updateCounts(); makeLink();
       }catch(err){ alert('Import failed. CSV should look like: name,quality,position,stamina[,active,side]'); log('import error: '+err.message); }
     };
@@ -449,20 +453,74 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   $('makeLinkBtn').addEventListener('click', makeLink);
   $('copyLinkBtn').addEventListener('click', function(){ var url=makeLink(); try{ navigator.clipboard.writeText(url); els.shareStatus.textContent='Copied link'; } catch(e){ els.shareStatus.textContent=url; } });
 
-  // ===== Auth wiring (guarded) =====
-  function setDbPill(){ els.dbPill.textContent = (supabase && currentUser) ? 'DB: online' : 'DB: offline'; }
-  function setAuthUI(){ els.authStatus.textContent = currentUser ? 'Signed in' : 'Not signed in'; $('signOut').style.display = currentUser ? 'inline-flex' : 'none'; setDbPill(); }
+  // ===== DB helpers =====
+  function dbOnline(){ return !!(supabase && currentUser); }
+  function setDbPill(){
+    els.dbPill.textContent = dbOnline()? 'DB: online' : 'DB: offline';
+    els.dbPushBtn.disabled = !dbOnline();
+    els.dbPullBtn.disabled = !dbOnline();
+  }
+  function rowFromPlayer(p){
+    return { id:p.id, user_id: currentUser && currentUser.id ? currentUser.id : null,
+             name:p.name, quality:p.skill, position:p.position, stamina:p.stamina, active:p.active, side:p.side||null };
+  }
+  function playerFromRow(r){
+    return normalize({ id:r.id, name:r.name, skill:r.quality, position:r.position, stamina:r.stamina, active:r.active, side:r.side });
+  }
 
+  function dbUpsert(p){
+    if(!dbOnline() || syncing) return Promise.resolve();
+    return supabase.from('players').upsert(rowFromPlayer(p)).select('id').single().then(function(r){
+      if(r.error){ log('upsert error: '+r.error.message); }
+    });
+  }
+  function bulkUpsert(list){
+    if(!dbOnline() || syncing || !list || !list.length) return Promise.resolve();
+    var rows=list.map(rowFromPlayer);
+    return supabase.from('players').upsert(rows).select('id').then(function(r){
+      if(r.error){ log('bulk upsert error: '+r.error.message); }
+      else { log('bulk upsert ok: '+rows.length+' rows'); }
+    });
+  }
+  function dbDelete(p){
+    if(!dbOnline() || syncing) return Promise.resolve();
+    return supabase.from('players').delete().match({ id:p.id, user_id: currentUser.id }).then(function(r){
+      if(r.error){ log('delete error: '+r.error.message); }
+    });
+  }
+  function dbPull(){
+    if(!supabase || !currentUser) return Promise.resolve(false);
+    syncing = true;
+    return supabase.from('players').select('*').eq('user_id', currentUser.id).order('name', { ascending: true }).then(function(r){
+      syncing = false;
+      if(r.error){ log('pull error: '+r.error.message); return false; }
+      var data=r.data||[];
+      roster = data.map(playerFromRow);
+      abMap = {}; roster.forEach(function(p){ if(p.side==='A'||p.side==='B') abMap[p.id]=p.side; });
+      save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+      renderRoster(); renderTeams(); updateCounts(); makeLink(); setDbPill();
+      log('pulled '+data.length+' rows from DB');
+      return true;
+    });
+  }
+
+  // Buttons for manual sync
+  els.dbPushBtn.addEventListener('click', function(){ if(dbOnline()) bulkUpsert(roster); });
+  els.dbPullBtn.addEventListener('click', function(){ if(dbOnline()) dbPull(); });
+
+  // ===== Auth wiring =====
+  function setAuthUI(){ els.authStatus.textContent = currentUser ? 'Signed in' : 'Not signed in'; $('signOut').style.display = currentUser ? 'inline-flex' : 'none'; setDbPill(); }
   if (supabase){
     supabase.auth.onAuthStateChange(function(event, session){
       log('auth state: '+event);
       currentUser = (session && session.user) ? session.user : null;
       setAuthUI();
+      if(currentUser){ dbPull(); }
     });
     $('signOut').addEventListener('click', function(){ supabase.auth.signOut(); });
   }
 
-  // Expose the click handler globally for the inline onclick fallback
+  // Global handler for magic link
   window.__sendMagic = function () {
     log('sendMagic clicked');
     try {
@@ -491,6 +549,25 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   if(!loaded) els.shareStatus.textContent='No share link detected — using local roster';
   setAuthUI();
   log('Boot complete');
+
+  // Exchange code after magic link
+  try{
+    var urlStr = window.location.href;
+    var hasCode = (urlStr.indexOf('code=') >= 0);
+    if (hasCode && supabase) {
+      supabase.auth.exchangeCodeForSession(urlStr).then(function(res){
+        if(res && res.error){ log('exchange error: ' + res.error.message); }
+        history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+        log('exchanged code for session');
+        supabase.auth.getSession().then(function(obj){
+          var session = obj && obj.data ? obj.data.session : null;
+          currentUser = session && session.user ? session.user : null;
+          setAuthUI();
+          if(currentUser){ dbPull(); }
+        });
+      });
+    }
+  }catch(e){ log('bootstrap exchange error: '+e.message); }
 })();
 </script>
 </body>
