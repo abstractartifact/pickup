@@ -193,10 +193,19 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
   if (!window.supabase) { log('Supabase JS failed to load — check CDN'); }
   else { log('Supabase JS loaded'); }
 
-  var supabase = (window.supabase && SUPABASE_URL.indexOf('http')===0)
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
-    : null;
-  if (supabase) log('Supabase client created for '+SUPABASE_URL); else log('DB not configured; running local only');
+var supabase = null;
+if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: {
+      persistSession: true,        // stay signed in across reloads
+      autoRefreshToken: true,      // refresh in the background
+      storage: window.localStorage // make it explicit (default, but we hard-set it)
+    }
+  });
+  log('Supabase client created (sticky session)');
+} else {
+  log('DB not configured; local only');
+}
 
   // ===== DOM =====
   function $(id){ return document.getElementById(id); }
