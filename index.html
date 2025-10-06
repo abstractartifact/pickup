@@ -1,9 +1,9 @@
-h<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Pickup Lineup — FIFA ’98 (DB Sync)</title>
+<title>Pickup Lineup — FIFA ’98</title>
 <style>
 :root{
   --bg:#0b0f1a; --panel:#111a2c; --panel-2:#0e1626; --text:#f5f7ff; --muted:#9fb0d0;
@@ -44,7 +44,6 @@ input, select{ width:100%; min-height:44px; padding:12px; color:#fff; background
 .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,163,255,.5), 0 0 0 1px rgba(25,182,255,.35) }
 .btn.gold{ background:linear-gradient(180deg, #ffd100, #caa800); border-color:#ffdf3a; color:#0c0c0c; font-weight:700; box-shadow:0 0 0 1px rgba(255,209,0,.35) }
 .btn.blue{ background:linear-gradient(180deg, #1366a8, #0f4e7a); box-shadow:0 0 0 1px rgba(25,182,255,.35) }
-.btn.green{ background:linear-gradient(180deg, #0b5a39, #0a4a30) }
 .btn.red{ background:linear-gradient(180deg, #6a1010, #4f0c0c) }
 .btn.small{ min-height:34px; padding:8px 10px; font-size:13px }
 .pill{ display:inline-block; border:1px solid #3b5da3; background:#0f1738; color:#cbd8f4; border-radius:999px; padding:4px 10px; font-size:12px; box-shadow:inset 0 0 12px rgba(32,184,255,.15) }
@@ -61,16 +60,24 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
 .section-title{ font-size:13px; letter-spacing:.2px; color:var(--muted); text-transform:uppercase }
 .auth{ display:flex; gap:8px; align-items:center; flex-wrap:wrap } .auth input{ width:auto; min-width:240px }
 .debug{ margin-top:12px; font-size:12px; background:#0b0e14; border:1px dashed #3b5da3; padding:8px; border-radius:10px; color:#cbd8f4; white-space:pre-wrap; display:block }
+.select{ min-height:32px; padding:6px 8px; }
+.small-note{ font-size:12px; color:var(--muted) }
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+if(!window.supabase){
+  var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  document.head.appendChild(s);
+}
+</script>
 </head>
 <body>
 <div class="wrap">
   <div class="header card">
     <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap">
       <div>
-        <h1>Beach Pickup<span style="color:var(--accent)">’98</span></h1>
-        <div class="tagline">2 teams until 20 active · 4 teams at 20+ (A→A/C, B→B/D)</div>
+        <h1>Pickup Lineup <span style="color:var(--accent)">’98</span></h1>
+        <div class="tagline">No GKs · 2 teams until 20 active · 4 teams at 20+ (A→A/C, B→B/D)</div>
         <div class="tabbar">
           <button id="tabRoster" class="tab active">Roster</button>
           <button id="tabTeams" class="tab">Teams</button>
@@ -79,7 +86,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       </div>
       <div class="auth">
         <input id="email" placeholder="you@example.com" />
-        <button type="button" class="btn small blue" id="sendMagic" onclick="window.__sendMagic && window.__sendMagic()">Email me a sign‑in link</button>
+        <button type="button" class="btn small blue" id="sendMagic">Email me a sign-in link</button>
         <span class="muted" id="authStatus">Not signed in</span>
         <button class="btn small red" id="signOut" style="display:none">Sign out</button>
       </div>
@@ -109,7 +116,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       <div><label for="stamina">Stamina (1–3)</label>
         <select id="stamina"><option value="1">1 · Low</option><option value="2" selected>2 · Medium</option><option value="3">3 · High</option></select>
       </div>
-      <div style="align-self:end"><button class="btn ok gold" id="addBtn">Add player</button></div>
+      <div style="align-self:end"><button class="btn gold" id="addBtn">Add player</button></div>
     </div>
 
     <hr />
@@ -162,9 +169,11 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
       </div>
       <div class="row">
         <button class="btn small blue" id="reshuffleTeamsBtn">Reshuffle</button>
+        <span class="pill" id="overridesPill" title="Manual moves that stick across reshuffles">Manual moves: 0</span>
         <span class="pill" id="teamsCountPill">2 teams</span>
       </div>
     </div>
+    <div class="small-note">Tip: use the dropdown next to any name to move them. A/C are the same side; B/D are the same side.</div>
     <div id="teamsWrap" class="teams" style="margin-top:12px"></div>
   </section>
 
@@ -182,71 +191,54 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
 (function(){
   // ===== DEBUG =====
   var debugEl = document.getElementById('debug');
-  function log(msg){ try{ debugEl.textContent += (debugEl.textContent?'\n':'') + msg; console.log('[DEBUG]', msg); }catch(e){} }
+  function log(msg){ try{ debugEl.textContent += (debugEl.textContent? '\\n':'' ) + msg; console.log('[DEBUG]', msg); }catch(e){} }
   window.onerror = function(message, source, lineno, colno, error){ log('JS ERROR: '+message+' @'+lineno+':'+colno); };
 
-  // ===== CONFIG =====
-  var SUPABASE_URL  = "https://jkdvcxdagwpvlhcrbytl.supabase.co";   // ← replace
-  var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";              // ← replace
-  var REDIRECT_URL  = "https://abstractartifact.github.io/pickup/index.html";   // ← replace (explicit file)
+  // ===== CONFIG (YOUR VALUES) =====
+  var SUPABASE_URL  = "https://jkdvcxdagwpvlhcrbytl.supabase.co";
+  var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZHZjeGRhZ3dwdmxoY3JieXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzY3MzYsImV4cCI6MjA3NTAxMjczNn0.T5pEYdmCzWKZbzRUgzj4tgQC2a1chjLNi1LyuXDdqco";
+  var REDIRECT_URL  = "https://abstractartifact.github.io/pickup/index.html";
 
-  if (!window.supabase) { log('Supabase JS failed to load — check CDN'); }
-  else { log('Supabase JS loaded'); }
+  // ===== INIT (sticky session) =====
+  var supabase = null, currentUser = null, syncing = false;
+  if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { persistSession: true, autoRefreshToken: true, storage: window.localStorage }
+    });
+    log('Supabase client created (sticky session)');
+  } else { log('DB not configured; local only'); }
 
-var supabase = null;
-if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: {
-      persistSession: true,        // stay signed in across reloads
-      autoRefreshToken: true,      // refresh in the background
-      storage: window.localStorage // make it explicit (default, but we hard-set it)
-    }
-  });
-  log('Supabase client created (sticky session)');
-} else {
-  log('DB not configured; local only');
-}
-
-  // ===== DOM =====
+  // Tabs
   function $(id){ return document.getElementById(id); }
-  var els = {
-    tabRoster: $('tabRoster'), tabTeams: $('tabTeams'), tabAbout: $('tabAbout'),
-    panelRoster: $('panelRoster'), panelTeams: $('panelTeams'), panelAbout: $('panelAbout'),
-    rosterList: $('rosterList'), teamsWrap: $('teamsWrap'), teamsCount: $('teamsCountPill'),
-    countsHint: $('countsHint'), shareStatus: $('shareStatus'),
-    dbPill: $('dbPill'), authStatus: $('authStatus'), signOut: $('signOut'),
-    email: $('email'), sendMagic: $('sendMagic'),
-    dbPushBtn: $('dbPushBtn'), dbPullBtn: $('dbPullBtn')
-  };
-
-  // ===== Tabs =====
   function showPanel(id, btn){
-    els.panelRoster.style.display = (id==='panelRoster')?'block':'none';
-    els.panelTeams .style.display = (id==='panelTeams') ?'block':'none';
-    els.panelAbout .style.display = (id==='panelAbout') ?'block':'none';
-    els.tabRoster.classList.remove('active'); els.tabTeams.classList.remove('active'); els.tabAbout.classList.remove('active');
+    $('panelRoster').style.display = (id==='panelRoster')?'block':'none';
+    $('panelTeams') .style.display = (id==='panelTeams') ?'block':'none';
+    $('panelAbout') .style.display = (id==='panelAbout') ?'block':'none';
+    $('tabRoster').classList.remove('active'); $('tabTeams').classList.remove('active'); $('tabAbout').classList.remove('active');
     btn.classList.add('active');
   }
-  els.tabRoster.addEventListener('click', function(){ showPanel('panelRoster', els.tabRoster); log('Tab: Roster'); });
-  els.tabTeams .addEventListener('click', function(){ showPanel('panelTeams',  els.tabTeams ); renderTeams(); log('Tab: Teams'); });
-  els.tabAbout .addEventListener('click', function(){ showPanel('panelAbout',  els.tabAbout ); log('Tab: About'); });
-  showPanel('panelRoster', els.tabRoster);
+  $('tabRoster').addEventListener('click', function(){ showPanel('panelRoster', $('tabRoster')); log('Tab: Roster'); });
+  $('tabTeams') .addEventListener('click', function(){ showPanel('panelTeams',  $('tabTeams' )); renderTeams(); log('Tab: Teams'); });
+  $('tabAbout') .addEventListener('click', function(){ showPanel('panelAbout',  $('tabAbout' )); log('Tab: About'); });
+  showPanel('panelRoster', $('tabRoster'));
 
   // ===== Storage & helpers =====
-  var KEYS = { roster:"pl_roster_db_v1", abmap:"pl_abmap_db_v1" };
-  var seed = 0, sortMode = "quality_desc", currentUser = null, syncing = false;
-
+  var KEYS = { roster:"pl_roster_db_v2", abmap:"pl_abmap_db_v1", overrides:"pl_overrides_v1" };
+  var seed = 0, sortMode = "quality_desc";
   function uid(){ return Math.random().toString(36).slice(2,9); }
   function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function load(k,fb){ try{ var v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch(e){ return fb; } }
-  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(m){ return {"&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); }
   function parseActive(v){ if(v==null||v==="") return true; var s=String(v).toLowerCase(); return ["1","true","yes","y","in","active"].indexOf(s)>=0; }
+  function normalize(p){ return { id:p.id||uid(), name:p.name, skill:+p.skill||+p.quality||3, position:(p.position||'ANY'), stamina:Math.max(1,Math.min(3,+p.stamina||2)), active:(p.active!==false), side:p.side||null }; }
 
-  function normalize(p){ return { id:p.id||uid(), name:p.name, skill:+p.skill||+p.quality||3, position:p.position, stamina:+p.stamina, active:(p.active!==false), side:p.side||null }; }
   var roster = load(KEYS.roster, []).map(normalize);
   var abMap  = load(KEYS.abmap, {});
+  var overrides = load(KEYS.overrides, {});  // {playerId: "Team A"/"Team B"/"Team C"/"Team D"}
 
-  // ===== Link sharing (encodeURIComponent instead of base64) =====
+  function setOverridesPill(){ var n = Object.keys(overrides||{}).length; $('overridesPill').textContent = 'Manual moves: '+n; }
+
+  // Link sharing
   function toCompact(){ return roster.map(function(p){ return [p.name, p.skill, p.position, p.stamina, p.active?1:0, abMap[p.id]||p.side||""]; }); }
   function fromCompact(arr){
     var out=[], sideByName={};
@@ -265,7 +257,7 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
       var encoded = encodeURIComponent(JSON.stringify(payload));
       var url = location.origin+location.pathname+'#r='+encoded;
       history.replaceState(null,'','#r='+encoded);
-      els.shareStatus.textContent = 'Link updated ('+roster.length+' players)';
+      $('shareStatus').textContent = 'Link updated ('+roster.length+' players)';
       log('Share link updated');
       return url;
     }catch(e){ log('Share link error: '+e.message); return ''; }
@@ -276,15 +268,16 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
       var obj = JSON.parse(decodeURIComponent(m[1]));
       if(!obj || !obj.r || !obj.r.length) return false;
       var r=fromCompact(obj.r);
-      roster=r.roster.map(normalize); abMap=r.abMap; save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-      els.shareStatus.textContent='Loaded roster from link ('+roster.length+' players)';
+      roster=r.roster.map(normalize); abMap=r.abMap;
+      save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+      $('shareStatus').textContent='Loaded roster from link ('+roster.length+' players)';
       log('Loaded roster from link');
       return true;
-    }catch(e){ els.shareStatus.textContent='Invalid roster link'; log('Link decode error: '+e.message); return false; }
+    }catch(e){ $('shareStatus').textContent='Invalid roster link'; log('Link decode error: '+e.message); return false; }
   }
 
-  // ===== Roster UI =====
-  function updateCounts(){ var active=roster.filter(function(p){return p.active!==false;}).length; els.countsHint.textContent='Active '+active+' / Total '+roster.length; }
+  // Roster UI
+  function updateCounts(){ var active=roster.filter(function(p){return p.active!==false;}).length; $('countsHint').textContent='Active '+active+' / Total '+roster.length; }
   function getSortedRoster(){
     var arr=roster.slice();
     function byName(a,b){ return a.name.localeCompare(b.name, undefined, {sensitivity:'base'}); }
@@ -297,7 +290,7 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
     return arr;
   }
   function renderRoster(){
-    var root=els.rosterList; root.innerHTML='';
+    var root=$('rosterList'); root.innerHTML='';
     if(!roster.length){ root.innerHTML='<div class="muted">No players yet. Add or import a CSV — or open a share link.</div>'; return; }
     getSortedRoster().forEach(function(p){
       var div=document.createElement('div'); div.className='player'+(p.active===false?' out':'');
@@ -319,14 +312,14 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
         btns[i].addEventListener('click', (function(btn){
           return function(){
             var act=btn.getAttribute('data-act');
-            if(act==='del'){ delete abMap[p.id]; roster=roster.filter(function(x){return x!==p;}); if(dbOnline()) dbDelete(p); }
+            if(act==='del'){ delete abMap[p.id]; delete overrides[p.id]; roster=roster.filter(function(x){return x!==p;}); if(dbOnline()) dbDelete(p); }
             else if(act==='skp'){ p.skill=Math.min(5,p.skill+1); if(dbOnline()) dbUpsert(p); }
             else if(act==='skm'){ p.skill=Math.max(1,p.skill-1); if(dbOnline()) dbUpsert(p); }
             else if(act==='stp'){ p.stamina=Math.min(3,p.stamina+1); if(dbOnline()) dbUpsert(p); }
             else if(act==='stm'){ p.stamina=Math.max(1,p.stamina-1); if(dbOnline()) dbUpsert(p); }
             else if(act==='toggle'){ p.active=!(p.active!==false?true:false); if(dbOnline()) dbUpsert(p); }
-            save(KEYS.roster,roster);
-            renderRoster(); renderTeams(); updateCounts(); makeLink();
+            save(KEYS.roster,roster); save(KEYS.abmap,abMap); save(KEYS.overrides,overrides);
+            renderRoster(); renderTeams(); updateCounts(); makeLink(); setOverridesPill();
           };
         })(btns[i]));
       }
@@ -334,7 +327,7 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
     });
   }
 
-  // ===== Teams =====
+  // Team building
   function score(p){ return p.skill*10 + p.stamina; }
   function djb2(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return Math.abs(h); }
   function jitter(name, k, scale){ if(scale==null) scale=.49; var v = djb2(name+'#'+k)%1000/1000; return (v*2-1)*scale; }
@@ -363,9 +356,53 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
     });
     return T;
   }
+  function mapTeamAlias(name, available){
+    if (available.length === 2) {
+      if (name === 'Team C') return 'Team A';
+      if (name === 'Team D') return 'Team B';
+    }
+    for (var i=0;i<available.length;i++){ if (available[i]===name) return name; }
+    return available[0];
+  }
+  function applyOverrides(teams){
+    var names = teams.map(function(t){return t.name;});
+    var byName = {}; for (var i=0;i<teams.length;i++){ byName[teams[i].name]=teams[i]; }
+    var owner = {};
+    for (var i=0;i<teams.length;i++){
+      var arr = teams[i].players;
+      for (var j=0;j<arr.length;j++){ owner[arr[j].id] = teams[i].name; }
+    }
+    for (var pid in overrides){
+      var want = mapTeamAlias(overrides[pid], names);
+      var have = owner[pid];
+      if (!want || !byName[want] || have===want) continue;
+      var p=null, idx=-1, from=null;
+      for (var i=0;i<teams.length;i++){
+        var arr = teams[i].players;
+        for (var j=0;j<arr.length;j++){
+          if (arr[j].id === pid){ p = arr[j]; idx=j; from=teams[i]; break; }
+        }
+        if (p) break;
+      }
+      if (!p) continue;
+      from.players.splice(idx,1);
+      byName[want].players.push(p);
+      var side = (want==='Team A'||want==='Team C') ? 'A' : 'B';
+      p.side = side;
+      abMap[pid] = side;
+      save(KEYS.abmap, abMap);
+      if (dbOnline()) dbUpsert(p);
+    }
+    for (var k=0;k<teams.length;k++){
+      var t=teams[k];
+      t.avgSkill=t.players.length?(t.players.reduce(function(s,p){return s+p.skill;},0)/t.players.length):0;
+      t.avgStamina=t.players.length?(t.players.reduce(function(s,p){return s+p.stamina;},0)/t.players.length):0;
+    }
+    return teams;
+  }
   function buildTeams(active){
     if(active.length===0) return [];
-    if(active.length<20){ var two=computeBalancedTeams(active,["Team A","Team B"]); return two; }
+    if(active.length<20){ return applyOverrides(computeBalancedTeams(active,["Team A","Team B"])); }
     var A=[],B=[], sumA=0,sumB=0;
     active.forEach(function(p){
       var side=abMap[p.id]||p.side;
@@ -376,14 +413,15 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
     save(KEYS.abmap,abMap);
     var AC=computeBalancedTeams(A,["Team A","Team C"]);
     var BD=computeBalancedTeams(B,["Team B","Team D"]);
-    return [AC[0],BD[0],AC[1],BD[1]];
+    return applyOverrides([AC[0],BD[0],AC[1],BD[1]]);
   }
   function renderTeams(){
     var active=roster.filter(function(p){return p.active!==false;});
     var teams=buildTeams(active);
-    els.teamsCount.textContent = teams.length + ' team' + (teams.length>1?'s':'');
-    els.teamsWrap.className='teams'+(teams.length===4?' four':'');
-    els.teamsWrap.innerHTML='';
+    $('teamsCountPill').textContent = teams.length + ' team' + (teams.length>1?'s':'');
+    $('teamsWrap').className='teams'+(teams.length===4?' four':'');
+    $('teamsWrap').innerHTML='';
+    var teamNames = teams.map(function(t){return t.name;});
     teams.forEach(function(t){
       var side=(t.name==='Team A'||t.name==='Team C')?'A':'B';
       var card=document.createElement('div'); card.className='card';
@@ -397,14 +435,34 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
       var ul=card.querySelector('.team-list');
       t.players.forEach(function(p){
         var li=document.createElement('li'); li.className='player';
-        li.innerHTML='<span>'+escapeHtml(p.name)+'</span><span class="muted" style="font-size:12px">'+p.position+' · Q'+p.skill+'/St'+p.stamina+'</span>';
+        var sel = document.createElement('select'); sel.className='select'; sel.setAttribute('aria-label','Move '+p.name+' to team');
+        for (var i=0;i<teamNames.length;i++){
+          var opt=document.createElement('option'); opt.value=teamNames[i]; opt.textContent=teamNames[i];
+          if (teamNames[i]===t.name) opt.selected=true;
+          sel.appendChild(opt);
+        }
+        sel.addEventListener('change', function(pid, select){
+          return function(){
+            overrides[pid] = select.value;
+            save(KEYS.overrides, overrides);
+            var side = (select.value==='Team A'||select.value==='Team C') ? 'A' : 'B';
+            var rp = roster.find(function(x){return x.id===pid;});
+            if (rp){ rp.side=side; abMap[pid]=side; save(KEYS.abmap,abMap); if(dbOnline()) dbUpsert(rp); }
+            setOverridesPill();
+            renderTeams();
+          };
+        }(p.id, sel));
+        var left = document.createElement('div');
+        left.innerHTML = '<span>'+escapeHtml(p.name)+'</span><span class="muted" style="font-size:12px"> '+p.position+' · Q'+p.skill+'/St'+p.stamina+'</span>';
+        li.appendChild(left);
+        li.appendChild(sel);
         ul.appendChild(li);
       });
-      els.teamsWrap.appendChild(card);
+      $('teamsWrap').appendChild(card);
     });
   }
 
-  // ===== CSV, Sorting, Buttons =====
+  // CSV / Sort / Buttons
   function rowsToCSV(rows){ return rows.map(function(r){ return r.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(','); }).join('\n'); }
   function download(filename, text){ var blob=new Blob([text],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
 
@@ -448,11 +506,12 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
           var skill=Math.max(1,Math.min(5, Number(skOrQ)||3));
           var stamina=Math.max(1,Math.min(3, Number(st)||2));
           var active=parseActive(act);
-          out.push({id:uid(), name:nm, skill:skill, position:position, stamina:stamina, active:active, side: side||null});
+          var sideN=(side==='A'||side==='B')? side : null;
+          out.push({id:uid(), name:nm, skill:skill, position:position, stamina:stamina, active:active, side: sideN});
         }
-        roster=out; abMap={}; save(KEYS.roster,roster); save(KEYS.abmap,abMap);
+        roster=out; abMap={}; overrides={}; save(KEYS.roster,roster); save(KEYS.abmap,abMap); save(KEYS.overrides,overrides);
         if(dbOnline()) bulkUpsert(roster);
-        renderRoster(); renderTeams(); updateCounts(); makeLink();
+        renderRoster(); renderTeams(); updateCounts(); makeLink(); setOverridesPill();
       }catch(err){ alert('Import failed. CSV should look like: name,quality,position,stamina[,active,side]'); log('import error: '+err.message); }
     };
     reader.readAsText(f); e.target.value='';
@@ -460,14 +519,14 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
 
   $('sortMode').addEventListener('change', function(e){ sortMode=e.target.value; renderRoster(); });
   $('makeLinkBtn').addEventListener('click', makeLink);
-  $('copyLinkBtn').addEventListener('click', function(){ var url=makeLink(); try{ navigator.clipboard.writeText(url); els.shareStatus.textContent='Copied link'; } catch(e){ els.shareStatus.textContent=url; } });
+  $('copyLinkBtn').addEventListener('click', function(){ var url=makeLink(); try{ navigator.clipboard.writeText(url); $('shareStatus').textContent='Copied link'; } catch(e){ $('shareStatus').textContent=url; } });
 
   // ===== DB helpers =====
   function dbOnline(){ return !!(supabase && currentUser); }
   function setDbPill(){
-    els.dbPill.textContent = dbOnline()? 'DB: online' : 'DB: offline';
-    els.dbPushBtn.disabled = !dbOnline();
-    els.dbPullBtn.disabled = !dbOnline();
+    $('dbPill').textContent = dbOnline()? 'DB: online' : 'DB: offline';
+    $('dbPushBtn').disabled = !dbOnline();
+    $('dbPullBtn').disabled = !dbOnline();
   }
   function rowFromPlayer(p){
     return { id:p.id, user_id: currentUser && currentUser.id ? currentUser.id : null,
@@ -476,7 +535,6 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
   function playerFromRow(r){
     return normalize({ id:r.id, name:r.name, skill:r.quality, position:r.position, stamina:r.stamina, active:r.active, side:r.side });
   }
-
   function dbUpsert(p){
     if(!dbOnline() || syncing) return Promise.resolve();
     return supabase.from('players').upsert(rowFromPlayer(p)).select('id').single().then(function(r){
@@ -506,20 +564,26 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
       var data=r.data||[];
       roster = data.map(playerFromRow);
       abMap = {}; roster.forEach(function(p){ if(p.side==='A'||p.side==='B') abMap[p.id]=p.side; });
-      save(KEYS.roster,roster); save(KEYS.abmap,abMap);
-      renderRoster(); renderTeams(); updateCounts(); makeLink(); setDbPill();
+      overrides = {}; // pull resets manual moves (local only)
+      save(KEYS.roster,roster); save(KEYS.abmap,abMap); save(KEYS.overrides,overrides);
+      renderRoster(); renderTeams(); updateCounts(); makeLink(); setDbPill(); setOverridesPill();
       log('pulled '+data.length+' rows from DB');
       return true;
     });
   }
+  $('dbPushBtn').addEventListener('click', function(){ if(dbOnline()) bulkUpsert(roster); });
+  $('dbPullBtn').addEventListener('click', function(){ if(dbOnline()) dbPull(); });
 
-  // Buttons for manual sync
-  els.dbPushBtn.addEventListener('click', function(){ if(dbOnline()) bulkUpsert(roster); });
-  els.dbPullBtn.addEventListener('click', function(){ if(dbOnline()) dbPull(); });
-
-  // ===== Auth wiring =====
-  function setAuthUI(){ els.authStatus.textContent = currentUser ? 'Signed in' : 'Not signed in'; $('signOut').style.display = currentUser ? 'inline-flex' : 'none'; setDbPill(); }
+  // ===== Auth wiring (sticky restore + magic link) =====
+  function setAuthUI(){ $('authStatus').textContent = currentUser ? 'Signed in' : 'Not signed in'; $('signOut').style.display = currentUser ? 'inline-flex' : 'none'; setDbPill(); }
   if (supabase){
+    supabase.auth.getSession().then(function(res){
+      var session = res && res.data ? res.data.session : null;
+      currentUser = session && session.user ? session.user : null;
+      setAuthUI();
+      if(currentUser){ dbPull(); }
+      log(currentUser ? 'Session restored' : 'No saved session');
+    });
     supabase.auth.onAuthStateChange(function(event, session){
       log('auth state: '+event);
       currentUser = (session && session.user) ? session.user : null;
@@ -527,35 +591,31 @@ if (window.supabase && SUPABASE_URL.indexOf('http') === 0) {
       if(currentUser){ dbPull(); }
     });
     $('signOut').addEventListener('click', function(){ supabase.auth.signOut(); });
+    $('sendMagic').addEventListener('click', function () {
+      try {
+        var email = $('email').value.trim();
+        if (!email) { alert('Enter your email first.'); return; }
+        $('sendMagic').disabled = true; $('sendMagic').textContent = 'Sending…'; $('authStatus').textContent = 'Sending magic link…';
+        supabase.auth.signInWithOtp({ email: email, options: { emailRedirectTo: REDIRECT_URL } }).then(function(r){
+          if (r && r.error){ log('signInWithOtp error: '+r.error.message); $('authStatus').textContent = 'Failed to send link'; }
+          else { log('OTP request sent OK'); $('authStatus').textContent = 'Check your email for the sign-in link'; }
+          $('sendMagic').disabled = false; $('sendMagic').textContent = 'Email me a sign-in link';
+        }).catch(function(e){
+          log('SendMagic exception: '+e.message); $('authStatus').textContent = 'Error sending link';
+          $('sendMagic').disabled = false; $('sendMagic').textContent = 'Email me a sign-in link';
+        });
+      } catch (e) {
+        log('SendMagic fatal: '+e.message);
+        $('authStatus').textContent = 'Error sending link';
+        $('sendMagic').disabled = false; $('sendMagic').textContent = 'Email me a sign-in link';
+      }
+    });
   }
-
-  // Global handler for magic link
-  window.__sendMagic = function () {
-    log('sendMagic clicked');
-    try {
-      if (!supabase) { alert('DB client not initialized'); return; }
-      var email = els.email.value.trim();
-      if (!email) { alert('Enter your email first.'); return; }
-      els.sendMagic.disabled = true; els.sendMagic.textContent = 'Sending…'; els.authStatus.textContent = 'Sending magic link…';
-      supabase.auth.signInWithOtp({ email: email, options: { emailRedirectTo: REDIRECT_URL } }).then(function(r){
-        if (r && r.error){ log('signInWithOtp error: '+r.error.message); els.authStatus.textContent = 'Failed to send link'; }
-        else { log('OTP request sent OK'); els.authStatus.textContent = 'Check your email for the sign‑in link'; }
-        els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
-      }).catch(function(e){
-        log('SendMagic exception: '+e.message); els.authStatus.textContent = 'Error sending link';
-        els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
-      });
-    } catch (e) {
-      log('SendMagic fatal: '+e.message);
-      els.authStatus.textContent = 'Error sending link';
-      els.sendMagic.disabled = false; els.sendMagic.textContent = 'Email me a sign‑in link';
-    }
-  };
 
   // ===== Boot =====
   var loaded = tryLoadFromHash();
-  renderRoster(); renderTeams(); updateCounts();
-  if(!loaded) els.shareStatus.textContent='No share link detected — using local roster';
+  renderRoster(); renderTeams(); updateCounts(); setOverridesPill();
+  if(!loaded) $('shareStatus').textContent='No share link detected — using local roster';
   setAuthUI();
   log('Boot complete');
 
