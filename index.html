@@ -64,12 +64,7 @@ hr{ border:none; height:1px; background:linear-gradient(90deg, transparent, #2b3
 .small-note{ font-size:12px; color:var(--muted) }
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>
-if(!window.supabase){
-  var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-  document.head.appendChild(s);
-}
-</script>
+<script>if(!window.supabase){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';document.head.appendChild(s);}</script>
 </head>
 <body>
 <div class="wrap">
@@ -223,8 +218,14 @@ if(!window.supabase){
   showPanel('panelRoster', $('tabRoster'));
 
   // ===== Storage & helpers =====
-  var KEYS = { roster:"pl_roster_db_v2", abmap:"pl_abmap_db_v1", overrides:"pl_overrides_v1" };
-  var seed = 0, sortMode = "quality_desc";
+  var KEYS = {
+    roster:"pl_roster_db_v2",
+    abmap:"pl_abmap_db_v1",
+    overrides:"pl_overrides_v1",
+    lastTeams:"pl_last_teams_v1",   // NEW: last shown assignment
+    seed:"pl_seed_v1"               // NEW: persistent shuffle seed
+  };
+  var seed = load(KEYS.seed, 0), sortMode = "quality_desc";
   function uid(){ return Math.random().toString(36).slice(2,9); }
   function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function load(k,fb){ try{ var v=localStorage.getItem(k); return v? JSON.parse(v):fb; }catch(e){ return fb; } }
@@ -460,6 +461,11 @@ if(!window.supabase){
       });
       $('teamsWrap').appendChild(card);
     });
+
+    // NEW: persist the last shown team assignment
+    var last = {};
+    teams.forEach(function(t){ t.players.forEach(function(p){ last[p.id] = t.name; }); });
+    save(KEYS.lastTeams, last);
   }
 
   // CSV / Sort / Buttons
@@ -476,7 +482,11 @@ if(!window.supabase){
   $('allInBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=true;}); save(KEYS.roster,roster); if(dbOnline()) bulkUpsert(roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
   $('allOutBtn').addEventListener('click', function(){ roster.forEach(function(p){p.active=false;}); save(KEYS.roster,roster); if(dbOnline()) bulkUpsert(roster); renderRoster(); renderTeams(); updateCounts(); makeLink(); });
 
-  function reseed(){ seed = (seed * 1664525 + 1013904223) >>> 0; }
+  // NEW: persistent reseed
+  function reseed(){
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    save(KEYS.seed, seed);
+  }
   $('reshuffleTeamsBtn').addEventListener('click', function(){ reseed(); renderTeams(); });
 
   $('exportRosterBtn').addEventListener('click', function(){
@@ -614,6 +624,17 @@ if(!window.supabase){
 
   // ===== Boot =====
   var loaded = tryLoadFromHash();
+
+  // NEW: restore last shown teams as overrides for current players
+  var savedLast = load(KEYS.lastTeams, {});
+  if (savedLast && typeof savedLast === 'object') {
+    var ids = new Set((roster||[]).map(function(p){return p.id;}));
+    Object.keys(savedLast).forEach(function(pid){
+      if (ids.has(pid)) overrides[pid] = savedLast[pid];
+    });
+    save(KEYS.overrides, overrides);
+  }
+
   renderRoster(); renderTeams(); updateCounts(); setOverridesPill();
   if(!loaded) $('shareStatus').textContent='No share link detected — using local roster';
   setAuthUI();
